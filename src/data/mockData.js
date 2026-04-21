@@ -162,17 +162,28 @@ export const fleetSnapshotDefectDetails = {
 // ============================================================
 // ADMIN — Organization users, PM settings, custom defects
 // ============================================================
+// Vendor users carry a list of DSP IDs they're assigned to handle
+// (empty array or special 'all' means they serve every DSP).
 export const orgUsers = [
-  // Ribrell 21 (DSP) users
-  { id: 'u-001', dspId: 'DSP-4201', name: 'Tamika Gambrell',  email: 'tamika@ribrell21.com',   roles: ['org_admin', 'fleet_owner'], lastLoginAt: '2026-04-21T07:14:00', invitedBy: 'Self', twoFAEnabled: true,  status: 'active' },
-  { id: 'u-002', dspId: 'DSP-4201', name: 'Marcus Green',     email: 'marcus@ribrell21.com',   roles: ['rfp_sender'],               lastLoginAt: '2026-04-20T18:30:00', invitedBy: 'Tamika Gambrell', twoFAEnabled: false, status: 'active' },
-  { id: 'u-003', dspId: 'DSP-4201', name: 'Carlos Mendez',    email: 'carlos@ribrell21.com',   roles: ['fleet_owner'],              lastLoginAt: '2026-04-19T14:00:00', invitedBy: 'Tamika Gambrell', twoFAEnabled: false, status: 'pending' },
-  // Dulles Midas (Vendor) users
-  { id: 'u-101', dspId: 'V-101',    name: 'Olger Joya',       email: 'olger@dullesmidas.com',  roles: ['org_admin', 'vendor', 'fleet_manager', 'technician'], lastLoginAt: '2026-04-21T06:00:00', invitedBy: 'Self', twoFAEnabled: true,  status: 'active' },
-  { id: 'u-102', dspId: 'V-101',    name: 'David Torres',     email: 'david@dullesmidas.com',  roles: ['vendor', 'fleet_manager', 'technician'],              lastLoginAt: '2026-04-21T05:30:00', invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'active' },
-  { id: 'u-103', dspId: 'V-101',    name: 'Mike Chen',        email: 'mike@dullesmidas.com',   roles: ['technician'],              lastLoginAt: '2026-04-20T20:00:00', invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'active' },
-  { id: 'u-104', dspId: 'V-101',    name: 'Sarah Johnson',    email: 'sarah@dullesmidas.com',  roles: ['technician'],              lastLoginAt: '2026-04-18T09:15:00', invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'active' },
-  { id: 'u-105', dspId: 'V-101',    name: 'Lisa Rodriguez',   email: 'lisa@dullesmidas.com',   roles: ['subcontract_assigner'],     lastLoginAt: null,                  invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'invited' },
+  // Ribrell 21 (DSP) users — no DSP assignment (they ARE the DSP)
+  { id: 'u-001', dspId: 'DSP-4201', name: 'Tamika Gambrell',  email: 'tamika@ribrell21.com',   roles: ['org_admin', 'fleet_owner'], assignedDsps: [], lastLoginAt: '2026-04-21T07:14:00', invitedBy: 'Self', twoFAEnabled: true,  status: 'active' },
+  { id: 'u-002', dspId: 'DSP-4201', name: 'Marcus Green',     email: 'marcus@ribrell21.com',   roles: ['rfp_sender'],               assignedDsps: [], lastLoginAt: '2026-04-20T18:30:00', invitedBy: 'Tamika Gambrell', twoFAEnabled: false, status: 'active' },
+  { id: 'u-003', dspId: 'DSP-4201', name: 'Carlos Mendez',    email: 'carlos@ribrell21.com',   roles: ['fleet_owner'],              assignedDsps: [], lastLoginAt: '2026-04-19T14:00:00', invitedBy: 'Tamika Gambrell', twoFAEnabled: false, status: 'pending' },
+  // Dulles Midas (Vendor) users — each user serves a subset of DSPs
+  { id: 'u-101', dspId: 'V-101',    name: 'Olger Joya',       email: 'olger@dullesmidas.com',  roles: ['org_admin', 'vendor', 'fleet_manager', 'technician'], assignedDsps: ['DSP-4201','DSP-4202','DSP-4203','DSP-4204','DSP-4205'], lastLoginAt: '2026-04-21T06:00:00', invitedBy: 'Self', twoFAEnabled: true,  status: 'active' },
+  { id: 'u-102', dspId: 'V-101',    name: 'David Torres',     email: 'david@dullesmidas.com',  roles: ['vendor', 'fleet_manager', 'technician'],              assignedDsps: ['DSP-4201','DSP-4202','DSP-4204'], lastLoginAt: '2026-04-21T05:30:00', invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'active' },
+  { id: 'u-103', dspId: 'V-101',    name: 'Mike Chen',        email: 'mike@dullesmidas.com',   roles: ['technician'],              assignedDsps: ['DSP-4203','DSP-4205'], lastLoginAt: '2026-04-20T20:00:00', invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'active' },
+  { id: 'u-104', dspId: 'V-101',    name: 'Sarah Johnson',    email: 'sarah@dullesmidas.com',  roles: ['technician'],              assignedDsps: ['DSP-4201','DSP-4203'], lastLoginAt: '2026-04-18T09:15:00', invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'active' },
+  { id: 'u-105', dspId: 'V-101',    name: 'Lisa Rodriguez',   email: 'lisa@dullesmidas.com',   roles: ['subcontract_assigner'],     assignedDsps: ['DSP-4202'], lastLoginAt: null,                  invitedBy: 'Olger Joya', twoFAEnabled: false, status: 'invited' },
+];
+
+// DSPs that a vendor can assign to its users (derived from the fleet, but exported here for reuse)
+export const VENDOR_ASSIGNABLE_DSPS = [
+  { id: 'DSP-4201', name: 'Ribrell 21',       code: 'RBR', station: 'DSE4', vanCount: 12 },
+  { id: 'DSP-4202', name: 'Ceiba Routes',     code: 'CBR', station: 'DSE4', vanCount: 8 },
+  { id: 'DSP-4203', name: 'TOTL Logistics',   code: 'TTL', station: 'DWA6', vanCount: 8 },
+  { id: 'DSP-4204', name: 'Summit Express',   code: 'SEX', station: 'DWA6', vanCount: 6 },
+  { id: 'DSP-4205', name: 'Redmond Routes',   code: 'RDM', station: 'DSE4', vanCount: 6 },
 ];
 
 export const AVAILABLE_ROLES = [

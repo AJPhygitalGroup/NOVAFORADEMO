@@ -9,7 +9,7 @@ import {
   LifeBuoy, Gauge, MonitorSmartphone, ThermometerSun, HelpCircle, Zap as ZapIcon,
   Ban, CheckCheck
 } from 'lucide-react';
-import { orgUsers, AVAILABLE_ROLES, preventiveMaintenanceJobs, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans } from '../data/mockData';
+import { orgUsers, AVAILABLE_ROLES, preventiveMaintenanceJobs, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS } from '../data/mockData';
 import Badge from './ui/Badge';
 
 const DEFECT_CATEGORY_ICONS = {
@@ -19,12 +19,71 @@ const DEFECT_CATEGORY_ICONS = {
 const SERVICE_ICONS = { WrenchIcon, Zap, Car, Paintbrush, Shield, Armchair, Sparkles, ClipboardCheck, Circle, Package };
 
 // ============================================================
+// Reusable DSP picker — multi-select with "All" quick action
+// ============================================================
+function DspAssignmentPicker({ selected, onChange, color = 'accent-blue' }) {
+  const allIds = VENDOR_ASSIGNABLE_DSPS.map((d) => d.id);
+  const allSelected = selected.length === allIds.length;
+  const noneSelected = selected.length === 0;
+
+  const toggle = (id) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const selectAll = () => onChange(allSelected ? [] : allIds);
+
+  const borderMap = { 'accent-blue': 'border-accent-blue/50 bg-accent-blue/5', 'accent-green': 'border-accent-green/50 bg-accent-green/5' };
+  const checkMap  = { 'accent-blue': 'bg-accent-blue border-accent-blue', 'accent-green': 'bg-accent-green border-accent-green' };
+  const activeBorder = borderMap[color] || borderMap['accent-blue'];
+  const activeCheck = checkMap[color] || checkMap['accent-blue'];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 text-[11px] text-navy-400">
+          <Building2 size={11} />
+          {noneSelected
+            ? <span className="text-accent-orange font-semibold">No DSPs assigned — this user won't see any WOs</span>
+            : allSelected
+              ? <span className="text-white font-semibold">All DSPs selected</span>
+              : <><span className="text-white font-semibold">{selected.length}</span> of {allIds.length} DSPs selected</>}
+        </div>
+        <button onClick={selectAll} className="text-[11px] text-accent-blue hover:underline font-medium">
+          {allSelected ? 'Clear all' : 'Select all'}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        {VENDOR_ASSIGNABLE_DSPS.map((d) => {
+          const active = selected.includes(d.id);
+          return (
+            <button key={d.id} type="button" onClick={() => toggle(d.id)}
+              className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                active ? activeBorder : 'border-navy-700 bg-navy-800/30 hover:border-navy-600'
+              }`}>
+              <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
+                active ? activeCheck : 'border-navy-600'
+              }`}>
+                {active && <Check size={12} className="text-white" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-white truncate">{d.name} <span className="text-navy-400 font-normal">({d.code})</span></div>
+                <div className="text-[10px] text-navy-400">Station {d.station} · {d.vanCount} vans</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // Tab: Users
 // ============================================================
 function UsersTab({ user, users, onUpdateUsers }) {
   const [showInvite, setShowInvite] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [search, setSearch] = useState('');
+
+  // Vendor admin view needs an extra DSP-assignment column
+  const isVendorOrg = user?.orgType === 'vendor' || user?.orgId?.startsWith('V-');
 
   const filtered = search
     ? users.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
@@ -51,6 +110,7 @@ function UsersTab({ user, users, onUpdateUsers }) {
             <tr className="border-b border-navy-800 bg-navy-950/40">
               <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">User</th>
               <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Roles</th>
+              {isVendorOrg && <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">DSPs Assigned</th>}
               <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Status</th>
               <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">2FA</th>
               <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Last login</th>
@@ -74,6 +134,23 @@ function UsersTab({ user, users, onUpdateUsers }) {
                     {u.roles.length > 2 && <Badge variant="gray">+{u.roles.length - 2}</Badge>}
                   </div>
                 </td>
+                {isVendorOrg && (
+                  <td className="px-4 py-3">
+                    {(u.assignedDsps || []).length === 0 ? (
+                      <span className="text-[11px] text-accent-orange">None</span>
+                    ) : (u.assignedDsps || []).length === VENDOR_ASSIGNABLE_DSPS.length ? (
+                      <Badge variant="green">All ({VENDOR_ASSIGNABLE_DSPS.length})</Badge>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {(u.assignedDsps || []).slice(0, 2).map((did) => {
+                          const d = VENDOR_ASSIGNABLE_DSPS.find((x) => x.id === did);
+                          return <Badge key={did} variant="blue">{d?.code || did.replace('DSP-', '')}</Badge>;
+                        })}
+                        {(u.assignedDsps || []).length > 2 && <Badge variant="gray">+{(u.assignedDsps || []).length - 2}</Badge>}
+                      </div>
+                    )}
+                  </td>
+                )}
                 <td className="px-4 py-3">
                   {u.status === 'active' && <Badge variant="green">Active</Badge>}
                   {u.status === 'pending' && <Badge variant="gold">Pending</Badge>}
@@ -91,7 +168,7 @@ function UsersTab({ user, users, onUpdateUsers }) {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-navy-400">No users match your search.</td></tr>
+              <tr><td colSpan={isVendorOrg ? 7 : 6} className="px-4 py-10 text-center text-sm text-navy-400">No users match your search.</td></tr>
             )}
           </tbody>
         </table>
@@ -120,15 +197,32 @@ function UsersTab({ user, users, onUpdateUsers }) {
                 return <Badge key={r} variant="blue">{role?.label || r}</Badge>;
               })}
             </div>
+            {isVendorOrg && (
+              <div className="mt-2 pt-2 border-t border-navy-800/60">
+                <div className="text-[10px] text-navy-400 uppercase tracking-wide mb-1 flex items-center gap-1"><Building2 size={9} /> DSPs assigned</div>
+                {(u.assignedDsps || []).length === 0 ? (
+                  <span className="text-[11px] text-accent-orange">None — user won't see any WOs</span>
+                ) : (u.assignedDsps || []).length === VENDOR_ASSIGNABLE_DSPS.length ? (
+                  <Badge variant="green">All {VENDOR_ASSIGNABLE_DSPS.length} DSPs</Badge>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {(u.assignedDsps || []).map((did) => {
+                      const d = VENDOR_ASSIGNABLE_DSPS.find((x) => x.id === did);
+                      return <Badge key={did} variant="blue">{d?.code || did}</Badge>;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </button>
         ))}
       </div>
 
       <AnimatePresence>
-        {showInvite && <InviteUserModal onClose={() => setShowInvite(false)} onInvite={(newUser) => {
+        {showInvite && <InviteUserModal isVendorOrg={isVendorOrg} onClose={() => setShowInvite(false)} onInvite={(newUser) => {
           onUpdateUsers([{ ...newUser, id: `u-${Date.now()}`, dspId: user.orgId, status: 'invited', lastLoginAt: null, twoFAEnabled: false, invitedBy: user.name }, ...users]);
         }} />}
-        {editUser && <EditUserModal user={editUser} onClose={() => setEditUser(null)}
+        {editUser && <EditUserModal user={editUser} isVendorOrg={isVendorOrg} onClose={() => setEditUser(null)}
           onSave={(updated) => { onUpdateUsers(users.map((x) => (x.id === updated.id ? updated : x))); setEditUser(null); }}
           onRemove={(id) => { onUpdateUsers(users.filter((x) => x.id !== id)); setEditUser(null); }} />}
       </AnimatePresence>
@@ -136,8 +230,8 @@ function UsersTab({ user, users, onUpdateUsers }) {
   );
 }
 
-function InviteUserModal({ onClose, onInvite }) {
-  const [form, setForm] = useState({ name: '', email: '', roles: ['technician'] });
+function InviteUserModal({ onClose, onInvite, isVendorOrg = false }) {
+  const [form, setForm] = useState({ name: '', email: '', roles: ['technician'], assignedDsps: [] });
   const [submitting, setSubmitting] = useState(false);
   const toggleRole = (r) => setForm({ ...form, roles: form.roles.includes(r) ? form.roles.filter((x) => x !== r) : [...form.roles, r] });
   const valid = form.name && form.email.includes('@') && form.roles.length > 0;
@@ -187,6 +281,17 @@ function InviteUserModal({ onClose, onInvite }) {
               ))}
             </div>
           </div>
+
+          {/* DSP assignments — vendor orgs only */}
+          {isVendorOrg && (
+            <div>
+              <label className="text-xs font-semibold text-navy-300 mb-1.5 block flex items-center gap-1.5">
+                <Building2 size={12} className="text-accent-blue" /> DSP Assignments
+              </label>
+              <p className="text-[11px] text-navy-400 mb-2">Choose which DSPs this user will handle. They'll only see WOs and vehicles from the DSPs selected here.</p>
+              <DspAssignmentPicker selected={form.assignedDsps} onChange={(v) => setForm({ ...form, assignedDsps: v })} color="accent-green" />
+            </div>
+          )}
         </div>
         <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
           <button onClick={onClose} className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">Cancel</button>
@@ -200,8 +305,8 @@ function InviteUserModal({ onClose, onInvite }) {
   );
 }
 
-function EditUserModal({ user, onClose, onSave, onRemove }) {
-  const [form, setForm] = useState({ ...user });
+function EditUserModal({ user, onClose, onSave, onRemove, isVendorOrg = false }) {
+  const [form, setForm] = useState({ ...user, assignedDsps: user.assignedDsps || [] });
   const [showRemove, setShowRemove] = useState(false);
   const toggleRole = (r) => setForm({ ...form, roles: form.roles.includes(r) ? form.roles.filter((x) => x !== r) : [...form.roles, r] });
 
@@ -233,6 +338,17 @@ function EditUserModal({ user, onClose, onSave, onRemove }) {
               ))}
             </div>
           </div>
+          {/* DSP assignments — vendor orgs only */}
+          {isVendorOrg && (
+            <div>
+              <label className="text-xs font-semibold text-navy-300 mb-1.5 block flex items-center gap-1.5">
+                <Building2 size={12} className="text-accent-blue" /> DSP Assignments
+              </label>
+              <p className="text-[11px] text-navy-400 mb-2">Pick which DSPs this user will handle. Each user only sees WOs and vehicles from the assigned DSPs.</p>
+              <DspAssignmentPicker selected={form.assignedDsps} onChange={(v) => setForm({ ...form, assignedDsps: v })} color="accent-blue" />
+            </div>
+          )}
+
           <div className="flex items-center gap-2 p-3 rounded-lg bg-navy-800/40 border border-navy-700/40">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${form.twoFAEnabled ? 'bg-accent-green/15' : 'bg-navy-700'}`}>
               {form.twoFAEnabled ? <Lock size={14} className="text-accent-green" /> : <Unlock size={14} className="text-navy-400" />}
