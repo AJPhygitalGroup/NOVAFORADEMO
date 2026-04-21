@@ -9,7 +9,7 @@ import {
   LifeBuoy, Gauge, MonitorSmartphone, ThermometerSun, HelpCircle, Zap as ZapIcon,
   Ban, CheckCheck
 } from 'lucide-react';
-import { orgUsers, AVAILABLE_ROLES, preventiveMaintenanceJobs, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS } from '../data/mockData';
+import { orgUsers, AVAILABLE_ROLES, rolesAssignableBy, preventiveMaintenanceJobs, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS } from '../data/mockData';
 import Badge from './ui/Badge';
 
 const DEFECT_CATEGORY_ICONS = {
@@ -219,10 +219,10 @@ function UsersTab({ user, users, onUpdateUsers }) {
       </div>
 
       <AnimatePresence>
-        {showInvite && <InviteUserModal isVendorOrg={isVendorOrg} onClose={() => setShowInvite(false)} onInvite={(newUser) => {
+        {showInvite && <InviteUserModal isVendorOrg={isVendorOrg} adminOrgType={user?.orgType} onClose={() => setShowInvite(false)} onInvite={(newUser) => {
           onUpdateUsers([{ ...newUser, id: `u-${Date.now()}`, dspId: user.orgId, status: 'invited', lastLoginAt: null, twoFAEnabled: false, invitedBy: user.name }, ...users]);
         }} />}
-        {editUser && <EditUserModal user={editUser} isVendorOrg={isVendorOrg} onClose={() => setEditUser(null)}
+        {editUser && <EditUserModal user={editUser} isVendorOrg={isVendorOrg} adminOrgType={user?.orgType} onClose={() => setEditUser(null)}
           onSave={(updated) => { onUpdateUsers(users.map((x) => (x.id === updated.id ? updated : x))); setEditUser(null); }}
           onRemove={(id) => { onUpdateUsers(users.filter((x) => x.id !== id)); setEditUser(null); }} />}
       </AnimatePresence>
@@ -230,8 +230,10 @@ function UsersTab({ user, users, onUpdateUsers }) {
   );
 }
 
-function InviteUserModal({ onClose, onInvite, isVendorOrg = false }) {
-  const [form, setForm] = useState({ name: '', email: '', roles: ['technician'], assignedDsps: [] });
+function InviteUserModal({ onClose, onInvite, isVendorOrg = false, adminOrgType }) {
+  const assignableRoles = rolesAssignableBy(adminOrgType);
+  const defaultRole = isVendorOrg ? 'technician' : adminOrgType === 'dsp' ? 'fleet_owner' : assignableRoles[0]?.id;
+  const [form, setForm] = useState({ name: '', email: '', roles: [defaultRole], assignedDsps: [] });
   const [submitting, setSubmitting] = useState(false);
   const toggleRole = (r) => setForm({ ...form, roles: form.roles.includes(r) ? form.roles.filter((x) => x !== r) : [...form.roles, r] });
   const valid = form.name && form.email.includes('@') && form.roles.length > 0;
@@ -267,8 +269,15 @@ function InviteUserModal({ onClose, onInvite, isVendorOrg = false }) {
           </div>
           <div>
             <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Roles</label>
+            <p className="text-[11px] text-navy-400 mb-2">
+              {isVendorOrg
+                ? 'Only vendor roles are available — you can\'t grant DSP or platform roles from here.'
+                : adminOrgType === 'dsp'
+                  ? 'Only DSP roles are available for your organization.'
+                  : 'Assign any platform role.'}
+            </p>
             <div className="space-y-1.5">
-              {AVAILABLE_ROLES.map((r) => (
+              {assignableRoles.map((r) => (
                 <label key={r.id} className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
                   form.roles.includes(r.id) ? 'border-accent-green/50 bg-accent-green/5' : 'border-navy-700 bg-navy-800/30 hover:border-navy-600'
                 }`}>
@@ -305,7 +314,8 @@ function InviteUserModal({ onClose, onInvite, isVendorOrg = false }) {
   );
 }
 
-function EditUserModal({ user, onClose, onSave, onRemove, isVendorOrg = false }) {
+function EditUserModal({ user, onClose, onSave, onRemove, isVendorOrg = false, adminOrgType }) {
+  const assignableRoles = rolesAssignableBy(adminOrgType);
   const [form, setForm] = useState({ ...user, assignedDsps: user.assignedDsps || [] });
   const [showRemove, setShowRemove] = useState(false);
   const toggleRole = (r) => setForm({ ...form, roles: form.roles.includes(r) ? form.roles.filter((x) => x !== r) : [...form.roles, r] });
@@ -327,8 +337,15 @@ function EditUserModal({ user, onClose, onSave, onRemove, isVendorOrg = false })
           <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Full name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg px-3 py-3 text-base bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
           <div>
             <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Roles</label>
+            <p className="text-[11px] text-navy-400 mb-2">
+              {isVendorOrg
+                ? 'Only vendor roles are available — you can\'t grant DSP or platform roles from here.'
+                : adminOrgType === 'dsp'
+                  ? 'Only DSP roles are available for your organization.'
+                  : 'Any role can be granted.'}
+            </p>
             <div className="space-y-1.5">
-              {AVAILABLE_ROLES.map((r) => (
+              {assignableRoles.map((r) => (
                 <label key={r.id} className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
                   form.roles.includes(r.id) ? 'border-accent-blue/50 bg-accent-blue/5' : 'border-navy-700 bg-navy-800/30 hover:border-navy-600'
                 }`}>

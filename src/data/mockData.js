@@ -186,15 +186,26 @@ export const VENDOR_ASSIGNABLE_DSPS = [
   { id: 'DSP-4205', name: 'Redmond Routes',   code: 'RDM', station: 'DSE4', vanCount: 6 },
 ];
 
+// Each role declares which org type it applies to. The admin invite/edit UI filters
+// the list based on the admin's own org type so e.g. a Vendor Admin cannot create
+// Fleet Owner (DSP-only) or Site Admin (platform-only) users.
+// appliesTo: 'dsp' | 'vendor' | 'both' | 'platform'
 export const AVAILABLE_ROLES = [
-  { id: 'org_admin',            label: 'Org Admin',            description: 'Full access to organization settings and users' },
-  { id: 'fleet_owner',          label: 'Fleet Owner',          description: 'Manages DSP fleet and dispatches WOs' },
-  { id: 'fleet_manager',        label: 'Fleet Manager',        description: 'Vendor user managing multiple DSPs' },
-  { id: 'vendor',               label: 'Vendor',               description: 'Repair shop capabilities' },
-  { id: 'technician',           label: 'Technician',           description: 'Performs inspections and completes WOs' },
-  { id: 'rfp_sender',           label: 'RFP Sender',           description: 'Can send Request for Proposals' },
-  { id: 'subcontract_assigner', label: 'Subcontract Assigner', description: 'Can subcontract WOs to other vendors' },
+  { id: 'org_admin',            label: 'Org Admin',            description: 'Full access to organization settings and users',   appliesTo: 'both' },
+  { id: 'fleet_owner',          label: 'Fleet Owner',          description: 'Manages DSP fleet and dispatches WOs',            appliesTo: 'dsp' },
+  { id: 'rfp_sender',           label: 'RFP Sender',           description: 'Can send Request for Proposals',                   appliesTo: 'dsp' },
+  { id: 'fleet_manager',        label: 'Fleet Manager',        description: 'Vendor user managing multiple DSPs',              appliesTo: 'vendor' },
+  { id: 'vendor',               label: 'Vendor',               description: 'Repair shop capabilities',                         appliesTo: 'vendor' },
+  { id: 'technician',           label: 'Technician',           description: 'Performs inspections and completes WOs',          appliesTo: 'vendor' },
+  { id: 'subcontract_assigner', label: 'Subcontract Assigner', description: 'Can subcontract WOs to other vendors',            appliesTo: 'vendor' },
 ];
+
+// Helper: returns the roles an admin of a given org type is allowed to grant to its users
+export function rolesAssignableBy(orgType) {
+  // Site admin can grant anything; org admins can only grant roles that apply to their own org type
+  if (orgType === 'platform') return AVAILABLE_ROLES;
+  return AVAILABLE_ROLES.filter((r) => r.appliesTo === 'both' || r.appliesTo === orgType);
+}
 
 export const preventiveMaintenanceJobs = [
   { id: 'PM-001', vehicleId: 'VAN-1042', dspId: 'DSP-4201', type: 'Oil Change',        triggerType: 'mileage',  triggerAt: 50000, currentValue: 48250, status: 'upcoming', dueAt: '2026-04-25', vendor: 'ProFleet Auto Care' },
