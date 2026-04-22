@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Shield, ShieldCheck, AlertTriangle, Award, TrendingUp, Users, Flame, Camera, Gift, Lock, Star, Plus, Hourglass, CheckCheck, X, Clock, Wrench, CheckCircle2, Calendar, KeyRound, ChevronRight, Info, SkipForward, PlayCircle, ClipboardCheck, ChevronDown, Check, ArrowRight, Bell, LayoutGrid, Truck } from 'lucide-react';
+import { Shield, ShieldCheck, AlertTriangle, Award, TrendingUp, Users, Flame, Camera, Gift, Lock, Star, Plus, Hourglass, CheckCheck, X, Clock, Wrench, CheckCircle2, Calendar, KeyRound, ChevronRight, Info, SkipForward, PlayCircle, ClipboardCheck, ChevronDown, Check, ArrowRight, Bell, LayoutGrid, Truck, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { daList, dvicDefects, dspRewards, dspList, weeklyInspections, defectCategoryBreakdown, inspectionSections, workOrdersData } from '../data/mockData';
 import MetricCard from './ui/MetricCard';
 import ProgressBar from './ui/ProgressBar';
@@ -1576,10 +1576,116 @@ function StartInspectionModal({ user, onClose }) {
   );
 }
 
+// Feedback attribute catalog for repair history thumbs up/down
+const REPAIR_FEEDBACK_ATTRIBUTES = ['Turnaround Time', 'Communication', 'Professionalism', 'Work Quality', 'Price'];
+
+// Compact thumbs-up / thumbs-down feedback control with attribute dropdown.
+// Used inline on each row of the Defects Repaired history list so the DSP
+// can rate the vendor's work without leaving the page.
+function RepairFeedback({ woId, feedback, onChange }) {
+  const [openDir, setOpenDir] = useState(null); // 'up' | 'down' | null
+  const current = feedback?.[woId];
+
+  const selectAttribute = (dir, attr) => {
+    onChange({ ...feedback, [woId]: { vote: dir, attribute: attr } });
+    setOpenDir(null);
+  };
+
+  const clear = (e) => {
+    e.stopPropagation();
+    const next = { ...feedback };
+    delete next[woId];
+    onChange(next);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+      <div className="relative">
+        <button
+          onClick={(e) => { e.stopPropagation(); setOpenDir(openDir === 'up' ? null : 'up'); }}
+          title={current?.vote === 'up' ? `Positive: ${current.attribute}` : 'Give positive feedback'}
+          className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] transition-all cursor-pointer ${
+            current?.vote === 'up'
+              ? 'bg-accent-green/20 border-accent-green/50 text-accent-green'
+              : 'bg-navy-800 border-navy-700 text-navy-400 hover:text-accent-green hover:border-accent-green/40'
+          }`}
+        >
+          <ThumbsUp size={12} className={current?.vote === 'up' ? 'fill-current' : ''} />
+          <ChevronDown size={9} />
+        </button>
+        <AnimatePresence>
+          {openDir === 'up' && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpenDir(null)} />
+              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                className="absolute top-full right-0 mt-1 w-48 bg-navy-900 border border-accent-green/40 rounded-lg shadow-2xl z-50 overflow-hidden">
+                <div className="px-3 py-2 border-b border-navy-800 bg-accent-green/10 text-[10px] font-semibold text-accent-green uppercase tracking-wide">
+                  Most impressive attribute
+                </div>
+                {REPAIR_FEEDBACK_ATTRIBUTES.map((attr) => (
+                  <button key={attr} onClick={() => selectAttribute('up', attr)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-left text-xs text-white hover:bg-accent-green/10 border-b border-navy-800/60 last:border-b-0">
+                    <span>{attr}</span>
+                    {current?.vote === 'up' && current?.attribute === attr && <Check size={11} className="text-accent-green" />}
+                  </button>
+                ))}
+                {current?.vote === 'up' && (
+                  <button onClick={clear}
+                    className="w-full px-3 py-2 text-[11px] text-navy-400 hover:text-accent-red border-t border-navy-800">Clear feedback</button>
+                )}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="relative">
+        <button
+          onClick={(e) => { e.stopPropagation(); setOpenDir(openDir === 'down' ? null : 'down'); }}
+          title={current?.vote === 'down' ? `Issue: ${current.attribute}` : 'Report an issue'}
+          className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] transition-all cursor-pointer ${
+            current?.vote === 'down'
+              ? 'bg-accent-red/20 border-accent-red/50 text-accent-red'
+              : 'bg-navy-800 border-navy-700 text-navy-400 hover:text-accent-red hover:border-accent-red/40'
+          }`}
+        >
+          <ThumbsDown size={12} className={current?.vote === 'down' ? 'fill-current' : ''} />
+          <ChevronDown size={9} />
+        </button>
+        <AnimatePresence>
+          {openDir === 'down' && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpenDir(null)} />
+              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                className="absolute top-full right-0 mt-1 w-48 bg-navy-900 border border-accent-red/40 rounded-lg shadow-2xl z-50 overflow-hidden">
+                <div className="px-3 py-2 border-b border-navy-800 bg-accent-red/10 text-[10px] font-semibold text-accent-red uppercase tracking-wide">
+                  Biggest issue
+                </div>
+                {REPAIR_FEEDBACK_ATTRIBUTES.map((attr) => (
+                  <button key={attr} onClick={() => selectAttribute('down', attr)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-left text-xs text-white hover:bg-accent-red/10 border-b border-navy-800/60 last:border-b-0">
+                    <span>{attr}</span>
+                    {current?.vote === 'down' && current?.attribute === attr && <Check size={11} className="text-accent-red" />}
+                  </button>
+                ))}
+                {current?.vote === 'down' && (
+                  <button onClick={clear}
+                    className="w-full px-3 py-2 text-[11px] text-navy-400 hover:text-accent-green border-t border-navy-800">Clear feedback</button>
+                )}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 // ============ Repair History Modal — Completed defects timeline ============
 function RepairHistoryModal({ repairedWOs, user, onClose }) {
   const [expanded, setExpanded] = useState(null);
   const [search, setSearch] = useState('');
+  const [feedback, setFeedback] = useState({}); // { [woId]: { vote: 'up'|'down', attribute } }
 
   // Sort by most recently completed first
   const sorted = [...repairedWOs].sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0));
@@ -1697,10 +1803,13 @@ function RepairHistoryModal({ repairedWOs, user, onClose }) {
                         <div className="text-sm font-semibold text-white">{wo.description}</div>
                         <div className="text-[11px] text-navy-400 mt-0.5">{wo.section} · {wo.part}</div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-[11px] text-navy-400">Completed</div>
-                        <div className="text-xs text-white">{new Date(wo.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                        <div className="text-[10px] text-navy-500">{new Date(wo.completedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <RepairFeedback woId={wo.id} feedback={feedback} onChange={setFeedback} />
+                        <div className="text-right">
+                          <div className="text-[11px] text-navy-400">Completed</div>
+                          <div className="text-xs text-white">{new Date(wo.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                          <div className="text-[10px] text-navy-500">{new Date(wo.completedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-2 mt-2 text-[11px] flex-wrap">
