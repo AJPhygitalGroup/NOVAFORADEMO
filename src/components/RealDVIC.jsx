@@ -56,16 +56,16 @@ const cardDetails = {
     icon: AlertTriangle,
     summary: '10 items pending approval to enroll in DVIC repair queue',
     items: [
-      { label: 'VAN-5012', title: 'Grinding noise — front brakes, feels spongy', meta: 'Critical · Mia Thompson', status: 'Pending Approval', severity: 'Critical' },
-      { label: 'VAN-1042', title: 'Rear left tire — tread below 3/32"', meta: 'High · Marcus Johnson', status: 'Pending Approval', severity: 'High' },
-      { label: 'VAN-1018', title: 'Windshield crack spreading', meta: 'High · Sarah Chen', status: 'Pending Approval', severity: 'High' },
-      { label: 'VAN-2027', title: 'ABS warning light active', meta: 'Critical · Tyler Nguyen', status: 'Pending Approval', severity: 'Critical' },
-      { label: 'VAN-3044', title: 'Power steering fluid leak', meta: 'High · Kevin Park', status: 'Pending Approval', severity: 'High' },
-      { label: 'VAN-4012', title: 'Rear brake pad wear indicator', meta: 'Medium · Aaliyah Washington', status: 'Pending Approval', severity: 'Medium' },
-      { label: 'VAN-5033', title: 'Headlight alignment out of spec', meta: 'Medium · David Kim', status: 'Pending Approval', severity: 'Medium' },
-      { label: 'VAN-1055', title: 'Wiper blades torn — driver side', meta: 'Low · James Williams', status: 'Pending Approval', severity: 'Low' },
-      { label: 'VAN-2088', title: 'Seatbelt retractor slow', meta: 'Medium · Sarah Chen', status: 'Pending Approval', severity: 'Medium' },
-      { label: 'VAN-3099', title: 'Cargo light intermittent', meta: 'Low · Destiny Brooks', status: 'Pending Approval', severity: 'Low' },
+      { label: 'VAN-5012', title: 'Grinding noise — front brakes, feels spongy', meta: 'Critical · Mia Thompson',         status: 'Pending Approval', severity: 'Critical', section: '4. Back Side',      part: 'Brakes' },
+      { label: 'VAN-1042', title: 'Rear left tire — tread below 3/32"',         meta: 'High · Marcus Johnson',              status: 'Pending Approval', severity: 'High',     section: '4. Back Side',      part: 'Tire tread' },
+      { label: 'VAN-1018', title: 'Windshield crack spreading',                  meta: 'High · Sarah Chen',                  status: 'Pending Approval', severity: 'High',     section: '1. Front Side',     part: 'Windshield' },
+      { label: 'VAN-2027', title: 'ABS warning light active',                    meta: 'Critical · Tyler Nguyen',            status: 'Pending Approval', severity: 'Critical', section: '5. In-Cab',         part: 'Dashboard' },
+      { label: 'VAN-3044', title: 'Power steering fluid leak',                   meta: 'High · Kevin Park',                  status: 'Pending Approval', severity: 'High',     section: '1. Front Side',     part: 'Fluids' },
+      { label: 'VAN-4012', title: 'Rear brake pad wear indicator',               meta: 'Medium · Aaliyah Washington',        status: 'Pending Approval', severity: 'Medium',   section: '4. Back Side',      part: 'Brake pads' },
+      { label: 'VAN-5033', title: 'Headlight alignment out of spec',             meta: 'Medium · David Kim',                 status: 'Pending Approval', severity: 'Medium',   section: '1. Front Side',     part: 'Headlights' },
+      { label: 'VAN-1055', title: 'Wiper blades torn — driver side',             meta: 'Low · James Williams',               status: 'Pending Approval', severity: 'Low',      section: '1. Front Side',     part: 'Wiper blades' },
+      { label: 'VAN-2088', title: 'Seatbelt retractor slow',   meta: 'Medium · Sarah Chen',    status: 'Pending Approval', severity: 'Medium', section: '5. In-Cab',     part: 'Seat belts' },
+      { label: 'VAN-3099', title: 'Cargo light intermittent',  meta: 'Low · Destiny Brooks',   status: 'Pending Approval', severity: 'Low',    section: '4. Back Side',  part: 'Cargo light' },
     ],
   },
   inspected: {
@@ -436,6 +436,121 @@ function InspectedDetailRenderer({ data, onOpenVehicleReport }) {
   );
 }
 
+// ============ Immediate Action Required — Approve / Reject per defect ============
+function ImmediateDetailRenderer({ items, onApprove, onReject }) {
+  // Local state tracks which items were approved or rejected in this session
+  const [actions, setActions] = useState({}); // { [label]: 'approved' | 'rejected' }
+
+  const handleApprove = (it) => {
+    setActions({ ...actions, [it.label]: 'approved' });
+    onApprove?.(it);
+  };
+  const handleReject = (it) => {
+    setActions({ ...actions, [it.label]: 'rejected' });
+    onReject?.(it);
+  };
+
+  const pending = items.filter((it) => !actions[it.label]);
+  const processed = items.filter((it) => actions[it.label]);
+  const approvedCount = Object.values(actions).filter((a) => a === 'approved').length;
+  const rejectedCount = Object.values(actions).filter((a) => a === 'rejected').length;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary band */}
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <span className="text-navy-400">Defects awaiting your approval</span>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-gold/15 border border-accent-gold/40 text-accent-gold font-semibold">
+          <Hourglass size={10} /> {pending.length} pending
+        </span>
+        {approvedCount > 0 && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-green/15 border border-accent-green/40 text-accent-green font-semibold">
+            <Check size={10} /> {approvedCount} approved
+          </span>
+        )}
+        {rejectedCount > 0 && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/40 text-accent-red font-semibold">
+            <X size={10} /> {rejectedCount} rejected
+          </span>
+        )}
+      </div>
+
+      {pending.length > 0 && (
+        <div>
+          <h4 className="text-[10px] font-semibold text-accent-gold uppercase tracking-wide mb-2">
+            Pending ({pending.length})
+          </h4>
+          <div className="space-y-2">
+            {pending.map((it) => (
+              <div key={it.label} className="bg-navy-800/40 border border-navy-700/40 rounded-lg p-3">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-sm font-semibold text-white font-mono">{it.label}</span>
+                      {it.severity && <Badge variant={severityColors[it.severity]}>{it.severity}</Badge>}
+                      {it.section && <Badge variant="gray">{it.section.split('. ')[1] || it.section}</Badge>}
+                    </div>
+                    <p className="text-sm text-navy-200">{it.title}</p>
+                    <p className="text-[11px] text-navy-400 mt-1">{it.meta}</p>
+                  </div>
+                  <Badge variant="gold" size="md">Pending</Badge>
+                </div>
+                <div className="flex items-center gap-1.5 pt-2 border-t border-navy-700/40">
+                  <button
+                    onClick={() => handleReject(it)}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-accent-red/10 border border-accent-red/40 text-accent-red text-[11px] font-semibold hover:bg-accent-red/20 cursor-pointer"
+                  >
+                    <X size={11} /> Reject
+                  </button>
+                  <button
+                    onClick={() => handleApprove(it)}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-accent-green text-white text-[11px] font-semibold hover:opacity-90 cursor-pointer shadow-lg shadow-accent-green/20"
+                  >
+                    <Check size={11} /> Approve &amp; Create WO
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {processed.length > 0 && (
+        <div>
+          <h4 className="text-[10px] font-semibold text-navy-400 uppercase tracking-wide mb-2">
+            Processed this session ({processed.length})
+          </h4>
+          <div className="space-y-1.5">
+            {processed.map((it) => {
+              const action = actions[it.label];
+              return (
+                <div key={it.label} className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
+                  action === 'approved' ? 'bg-accent-green/5 border-accent-green/30' : 'bg-accent-red/5 border-accent-red/30'
+                }`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-semibold text-white font-mono">{it.label}</span>
+                    <span className="text-[11px] text-navy-300 truncate">{it.title}</span>
+                  </div>
+                  <Badge variant={action === 'approved' ? 'green' : 'red'} size="md">
+                    {action === 'approved' ? <><Check size={9} className="inline mr-0.5" /> Approved → WO</> : <><X size={9} className="inline mr-0.5" /> Rejected</>}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {pending.length === 0 && processed.length === 0 && (
+        <div className="text-center py-10">
+          <CheckCheck size={40} className="text-navy-600 mx-auto mb-3" />
+          <p className="text-sm text-white">No defects pending approval</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============ Scheduled Repairs — split into Overnight + Shop buckets ============
 function ScheduledRepairsGrouped({ items }) {
   const overnight = items.filter((i) => i.repairBucket === 'overnight' || i.status === 'Rush Order');
@@ -477,7 +592,7 @@ function ScheduledRepairsGrouped({ items }) {
   );
 }
 
-function CardDetailModal({ cardKey, onClose, onOpenVehicleReport }) {
+function CardDetailModal({ cardKey, onClose, onOpenVehicleReport, onApproveDefect }) {
   if (!cardKey) return null;
   const data = cardDetails[cardKey];
   const Icon = data.icon;
@@ -511,6 +626,8 @@ function CardDetailModal({ cardKey, onClose, onOpenVehicleReport }) {
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           {cardKey === 'inspected' ? (
             <InspectedDetailRenderer data={data} onOpenVehicleReport={onOpenVehicleReport} />
+          ) : cardKey === 'immediate' ? (
+            <ImmediateDetailRenderer items={data.items} onApprove={onApproveDefect} />
           ) : data.scheduledItems ? (
             <ScheduledRepairsGrouped items={data.scheduledItems} />
           ) : data.groups ? (
@@ -2405,6 +2522,21 @@ export default function RealDVIC({ user }) {
               // Close the Vans Inspected modal first, then pop the Vehicle Report Card
               setOpenCard(null);
               setVehicleReportVan({ ...van, ...(vanUpdates[van.id] || {}) });
+            }}
+            onApproveDefect={(item) => {
+              // Close the Immediate modal and open the Create WO modal pre-filled with
+              // the defect info so the DSP can choose a vendor and send it off.
+              setOpenCard(null);
+              const fleetVan = fleetSnapshotVans.find((fv) => fv.id === item.label);
+              setCreateWOContext({
+                van: fleetVan || null,
+                defect: {
+                  section: item.section || '',
+                  part: item.part || '',
+                  description: item.title || '',
+                  severity: item.severity || 'Medium',
+                },
+              });
             }}
           />
         )}
