@@ -1033,20 +1033,20 @@ function DefectRulesTab({ user }) {
   const autoApprovedCount = Object.values(rules).filter((r) => r.enabled && r.threshold !== 'none').length;
   const totalCategories = DEFECT_CATEGORIES.length;
 
-  // Quick presets
+  // Quick presets — scoped to different vehicle-class cohorts
   const applyPreset = (preset) => {
     const next = { ...rules };
     DEFECT_CATEGORIES.forEach((c) => {
       if (preset === 'conservative') {
-        // Only safe, low-cost categories
+        // Branded ULCs only — Amazon-managed fleet, lowest-risk categories only
         const safe = ['wipers', 'emergency', 'fluids'].includes(c.id);
         next[c.id] = { enabled: safe, threshold: safe ? 'low' : 'none', maxCost: null };
       } else if (preset === 'balanced') {
-        // Default mix
+        // All AMR — mechanical repair scope under the primary AMR vendor
         next[c.id] = { enabled: c.defaultOn, threshold: c.defaultThreshold, maxCost: null };
-      } else if (preset === 'aggressive') {
-        // Auto-approve everything except major items
-        const major = ['brakes', 'body', 'windshield'].includes(c.id);
+      } else if (preset === 'comprehensive') {
+        // Branded & Rentals — broadest auto-approval; only the heaviest body/glass jobs stay manual
+        const major = ['body', 'windshield'].includes(c.id);
         next[c.id] = { enabled: !major, threshold: major ? 'none' : 'low_medium', maxCost: null };
       }
     });
@@ -1095,7 +1095,8 @@ function DefectRulesTab({ user }) {
               <Shield size={14} className="text-accent-blue" />
               <span className="text-sm font-semibold text-white">Conservative</span>
             </div>
-            <div className="text-[11px] text-navy-400">Only wipers, emergency kit and fluids (low severity)</div>
+            <div className="text-[11px] text-white font-semibold">*Branded ULCs only</div>
+            <div className="text-[11px] text-navy-400 mt-0.5">Lowest-risk scope — only Amazon-managed fleet, safe categories</div>
           </button>
           <button onClick={() => applyPreset('balanced')}
             className="text-left p-3 rounded-lg border border-navy-700 bg-navy-800/40 hover:border-accent-gold/40 hover:bg-accent-gold/5 cursor-pointer transition-all">
@@ -1104,15 +1105,17 @@ function DefectRulesTab({ user }) {
               <span className="text-sm font-semibold text-white">Balanced</span>
               <Badge variant="gold">Recommended</Badge>
             </div>
-            <div className="text-[11px] text-navy-400">Routine maintenance auto-approved, major repairs manual</div>
+            <div className="text-[11px] text-white font-semibold">*All AMR</div>
+            <div className="text-[11px] text-navy-400 mt-0.5">Everything your primary AMR vendor covers — routine maintenance auto-approved</div>
           </button>
-          <button onClick={() => applyPreset('aggressive')}
+          <button onClick={() => applyPreset('comprehensive')}
             className="text-left p-3 rounded-lg border border-navy-700 bg-navy-800/40 hover:border-accent-green/40 hover:bg-accent-green/5 cursor-pointer transition-all">
             <div className="flex items-center gap-2 mb-1">
               <ZapIcon size={14} className="text-accent-green" />
-              <span className="text-sm font-semibold text-white">Aggressive</span>
+              <span className="text-sm font-semibold text-white">Comprehensive</span>
             </div>
-            <div className="text-[11px] text-navy-400">Everything except brakes, body and windshield</div>
+            <div className="text-[11px] text-white font-semibold">Branded &amp; Rentals</div>
+            <div className="text-[11px] text-navy-400 mt-0.5">Broadest reach — everything except heavy body and windshield work</div>
           </button>
         </div>
       </div>
