@@ -32,6 +32,13 @@ function generateColor(fleetId) {
   return colors[n % colors.length];
 }
 
+// Default location per vehicle. Parking Lot is the baseline; a couple of
+// seed vans are marked offsite/checked_out to show the three states in the demo.
+const LOCATION_SEEDS = {
+  'VAN-1072': 'checked_out', // shop — grounded / overnight repair
+  'VAN-1091': 'offsite',      // customer manually set
+};
+
 function enrichVehicle(v) {
   const { year, make, model } = parseModel(v.model);
   return {
@@ -45,8 +52,19 @@ function enrichVehicle(v) {
     vehicleClass: v.id.startsWith('VAN-3') || v.id.startsWith('VAN-5') ? 'Branded Cargo' : v.id.startsWith('VAN-4') ? 'Rental' : 'Owned',
     fmc: v.id.startsWith('VAN-1') ? 'Wheels' : v.id.startsWith('VAN-2') ? 'Element' : v.id.startsWith('VAN-3') ? 'Wheels' : v.id.startsWith('VAN-4') ? 'Rented/Owned' : 'Element',
     isFmcManaged: !v.id.startsWith('VAN-4'),
+    location: LOCATION_SEEDS[v.id] || 'parking_lot',
   };
 }
+
+const LOCATION_OPTIONS = [
+  { id: 'parking_lot',  label: 'Parking Lot', icon: 'P',  variant: 'blue',
+    description: 'At the station — available for routing and repairs' },
+  { id: 'offsite',      label: 'Offsite',     icon: '⛌', variant: 'gold',
+    description: 'Not at the station — vendors will skip this van for repairs' },
+  { id: 'checked_out',  label: 'Checked Out', icon: '🔧', variant: 'purple',
+    description: 'Moved to vendor shop for repair — vendor Check-In to restore',
+    vendorOnly: true }, // only vendor can toggle this; DSP sees it as read-only
+];
 
 // ============================================================
 // Add/Edit Vehicle Modal (the "all-fields-editable-at-once" fix)
@@ -592,7 +610,50 @@ function DeltaSection({ title, icon: Icon, color, children, defaultOpen = true }
 // ============================================================
 // Vehicle Table (shared between flat view and DSP-grouped view)
 // ============================================================
-function VehicleTable({ vans, isVendor, canEdit, onRowClick, onCopy, copiedId }) {
+function LocationBadge({ v, canEditLocation, onChange }) {
+  const [open, setOpen] = useState(false);
+  const cfg = LOCATION_OPTIONS.find((l) => l.id === v.location) || LOCATION_OPTIONS[0];
+  const isCheckedOut = v.location === 'checked_out';
+  // Customer can only switch between parking_lot and offsite. Checked Out
+  // is triggered by the vendor during an overnight repair.
+  const canOpen = canEditLocation && !isCheckedOut;
+
+  return (
+    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => canOpen && setOpen(!open)}
+        disabled={!canOpen}
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-semibold transition-all ${
+          cfg.variant === 'blue'   ? 'bg-accent-blue/15 border-accent-blue/40 text-accent-blue' :
+          cfg.variant === 'gold'   ? 'bg-accent-gold/15 border-accent-gold/40 text-accent-gold' :
+          cfg.variant === 'purple' ? 'bg-accent-purple/15 border-accent-purple/40 text-accent-purple' :
+          'bg-navy-800 border-navy-700 text-navy-300'
+        } ${canOpen ? 'cursor-pointer hover:brightness-125' : 'cursor-default'}`}>
+        {cfg.label}
+        {canOpen && <ChevronDown size={10} />}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute top-full right-0 mt-1 w-56 bg-navy-900 border border-navy-700 rounded-lg shadow-2xl z-50 overflow-hidden">
+            {LOCATION_OPTIONS.filter((o) => !o.vendorOnly).map((o) => (
+              <button key={o.id} onClick={() => { onChange(v.fleetId, o.id); setOpen(false); }}
+                className="w-full text-left px-3 py-2 hover:bg-navy-800 border-b border-navy-800/60 last:border-b-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white">{o.label}</span>
+                  {v.location === o.id && <Check size={11} className="text-accent-green" />}
+                </div>
+                <div className="text-[10px] text-navy-400">{o.description}</div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function VehicleTable({ vans, isVendor, canEdit, onRowClick, onCopy, copiedId, onLocationChange }) {
   return (
     <table className="w-full">
       <thead>
@@ -602,9 +663,11 @@ function VehicleTable({ vans, isVendor, canEdit, onRowClick, onCopy, copiedId })
           <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Year / Make / Model</th>
           <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">VIN</th>
           <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Plate</th>
+          <th className="text-right text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Mileage</th>
           <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Class</th>
           <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">FMC</th>
           <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Status</th>
+          <th className="text-left text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Location</th>
           <th className="text-right text-[10px] uppercase tracking-wide text-navy-400 font-semibold px-4 py-3">Actions</th>
         </tr>
       </thead>
@@ -617,13 +680,14 @@ function VehicleTable({ vans, isVendor, canEdit, onRowClick, onCopy, copiedId })
             <td className="px-4 py-3 text-sm text-white whitespace-nowrap">{v.year} {v.make} <span className="text-navy-400">{v.model}</span></td>
             <td className="px-4 py-3 text-xs font-mono text-navy-300">{v.vin}</td>
             <td className="px-4 py-3 text-sm text-white whitespace-nowrap">{v.plate}</td>
+            <td className="px-4 py-3 text-sm text-white text-right whitespace-nowrap font-mono">{v.mileage?.toLocaleString() || '—'} mi</td>
             <td className="px-4 py-3"><Badge variant={v.vehicleClass === 'Rental' ? 'purple' : v.vehicleClass === 'Owned' ? 'blue' : 'gold'}>{v.vehicleClass}</Badge></td>
             <td className="px-4 py-3 text-sm text-navy-300">{v.fmc}</td>
             <td className="px-4 py-3">
               {v.grounded ? (
                 <Badge variant="red" size="md"><Lock size={9} className="inline mr-0.5" /> Grounded</Badge>
               ) : v.severity === 'clean' ? (
-                <Badge variant="green">Active</Badge>
+                <Badge variant="green"><CheckCircle2 size={9} className="inline mr-0.5" /> Clean</Badge>
               ) : v.severity === 'critical' ? (
                 <Badge variant="red">{v.defectCount} defects</Badge>
               ) : v.severity === 'high' ? (
@@ -631,6 +695,9 @@ function VehicleTable({ vans, isVendor, canEdit, onRowClick, onCopy, copiedId })
               ) : (
                 <Badge variant="gold">{v.defectCount} {v.defectCount === 1 ? 'defect' : 'defects'}</Badge>
               )}
+            </td>
+            <td className="px-4 py-3">
+              <LocationBadge v={v} canEditLocation={canEdit && !isVendor} onChange={onLocationChange} />
             </td>
             <td className="px-4 py-3 text-right">
               <div className="flex items-center justify-end gap-1">
@@ -656,38 +723,41 @@ function VehicleTable({ vans, isVendor, canEdit, onRowClick, onCopy, copiedId })
 }
 
 // Mobile card (compact, touch-friendly)
-function VehicleCardMobile({ v, onClick, onCopy, copiedId, isVendor, showDsp }) {
+function VehicleCardMobile({ v, onClick, onCopy, copiedId, isVendor, showDsp, onLocationChange }) {
   return (
     <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-3 transition-colors">
       <button onClick={onClick} className="w-full text-left">
         <div className="flex items-center justify-between mb-1 gap-2">
           <span className="text-sm font-semibold text-white">{v.fleetId}</span>
           {v.grounded ? <Badge variant="red" size="md"><Lock size={9} className="inline mr-0.5" /> Grounded</Badge>
-            : v.severity === 'clean' ? <Badge variant="green">Active</Badge>
+            : v.severity === 'clean' ? <Badge variant="green"><CheckCircle2 size={9} className="inline mr-0.5" /> Clean</Badge>
             : <Badge variant={v.severity === 'critical' ? 'red' : v.severity === 'high' ? 'orange' : 'gold'}>{v.defectCount} defect{v.defectCount > 1 ? 's' : ''}</Badge>}
         </div>
         {showDsp && <div className="text-[11px] text-accent-blue font-medium mb-1">{v.dsp}</div>}
         <div className="text-xs text-white mb-0.5">{v.year} {v.make} {v.model}</div>
         <div className="text-[11px] text-navy-400 font-mono truncate">{v.vin}</div>
         <div className="flex items-center justify-between mt-1.5 text-[11px] gap-2">
-          <span className="text-navy-300 truncate">{v.plate}</span>
+          <span className="text-navy-300 truncate">{v.plate} <span className="text-navy-500">·</span> <span className="text-white font-mono">{v.mileage?.toLocaleString() || '—'} mi</span></span>
           <div className="flex items-center gap-1.5 shrink-0">
             <Badge variant={v.vehicleClass === 'Rental' ? 'purple' : v.vehicleClass === 'Owned' ? 'blue' : 'gold'}>{v.vehicleClass}</Badge>
-            <span className="text-navy-500">·</span>
-            <span className="text-navy-400">{v.fmc}</span>
           </div>
         </div>
       </button>
-      <button
-        onClick={(e) => { e.stopPropagation(); onCopy(v); }}
-        className={`mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-xs font-medium transition-all ${
-          copiedId === v.fleetId
-            ? 'bg-accent-green/20 border-accent-green/50 text-accent-green'
-            : 'bg-navy-800 border-navy-700 text-navy-300 active:bg-navy-700'
-        }`}
-      >
-        {copiedId === v.fleetId ? <><Check size={12} /> Copied to clipboard</> : <><Copy size={12} /> Copy details for billing</>}
-      </button>
+      <div className="flex items-center gap-2 mt-2">
+        <div className="shrink-0">
+          <LocationBadge v={v} canEditLocation={!isVendor} onChange={onLocationChange || (() => {})} />
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); onCopy(v); }}
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-xs font-medium transition-all ${
+            copiedId === v.fleetId
+              ? 'bg-accent-green/20 border-accent-green/50 text-accent-green'
+              : 'bg-navy-800 border-navy-700 text-navy-300 active:bg-navy-700'
+          }`}
+        >
+          {copiedId === v.fleetId ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy details</>}
+        </button>
+      </div>
     </div>
   );
 }
@@ -762,6 +832,10 @@ export default function MyVehicles({ user }) {
     });
     return Array.from(map.values()).sort((a, b) => a.dspName.localeCompare(b.dspName));
   }, [filtered, isVendor, dspFilter]);
+
+  const handleLocationChange = (fleetId, newLocation) => {
+    setFleet(fleet.map((v) => (v.fleetId === fleetId ? { ...v, location: newLocation } : v)));
+  };
 
   // Copy vehicle details to clipboard (helpful for vendors creating invoices)
   const handleCopy = (v) => {
@@ -841,6 +915,8 @@ export default function MyVehicles({ user }) {
   const totalCount = fleet.length;
   const rentalCount = fleet.filter((v) => v.vehicleClass === 'Rental').length;
   const groundedCount = fleet.filter((v) => v.grounded).length;
+  const cleanCount = fleet.filter((v) => v.defectCount === 0).length;
+  const defectiveCount = fleet.filter((v) => v.defectCount > 0).length;
 
   const title = isVendor ? 'DSP Vehicles' : 'My Vehicles';
   const subtitle = isVendor
@@ -852,11 +928,24 @@ export default function MyVehicles({ user }) {
       <div className="flex items-start justify-between gap-3 mb-4 sm:mb-6 flex-wrap">
         <div className="min-w-0">
           <h2 className="text-2xl font-bold text-white mb-1">{title}</h2>
-          <p className="text-navy-400 text-sm">{subtitle} &mdash; <span className="text-white font-medium">{totalCount}</span> vans
-            {isVendor && <> across <span className="text-white font-medium">{uniqueDsps.length}</span> DSPs</>}
-            {!isVendor && rentalCount > 0 && <> · <span className="text-accent-purple">{rentalCount} rentals</span></>}
-            {!isVendor && groundedCount > 0 && <> · <span className="text-accent-red">{groundedCount} grounded</span></>}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap text-sm">
+            <span className="text-navy-400">{subtitle} &mdash; <span className="text-white font-medium">{totalCount}</span> vans</span>
+            {!isVendor && (
+              <>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-green/15 border border-accent-green/40 text-accent-green text-xs font-semibold">
+                  <CheckCircle2 size={11} /> {cleanCount} Clean
+                </span>
+                {defectiveCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/40 text-accent-red text-xs font-semibold">
+                    <AlertTriangle size={11} /> {defectiveCount} defective
+                  </span>
+                )}
+              </>
+            )}
+            {isVendor && <span className="text-navy-400">across <span className="text-white font-medium">{uniqueDsps.length}</span> DSPs</span>}
+            {!isVendor && rentalCount > 0 && <span className="text-navy-400">· <span className="text-accent-purple">{rentalCount} rentals</span></span>}
+            {!isVendor && groundedCount > 0 && <span className="text-navy-400">· <span className="text-accent-red">{groundedCount} grounded</span></span>}
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Vendor / technician actions — read-only */}
@@ -964,7 +1053,8 @@ export default function MyVehicles({ user }) {
               </div>
               <div className="overflow-x-auto">
                 <VehicleTable vans={group.vans} isVendor={isVendor} canEdit={canEdit}
-                  onRowClick={setEditVehicle} onCopy={handleCopy} copiedId={copiedId} />
+                  onRowClick={setEditVehicle} onCopy={handleCopy} copiedId={copiedId}
+                  onLocationChange={handleLocationChange} />
               </div>
             </motion.div>
           ))}
@@ -978,7 +1068,8 @@ export default function MyVehicles({ user }) {
         <div className="hidden md:block bg-navy-900/60 border border-navy-700/40 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <VehicleTable vans={filtered} isVendor={isVendor} canEdit={canEdit}
-              onRowClick={setEditVehicle} onCopy={handleCopy} copiedId={copiedId} />
+              onRowClick={setEditVehicle} onCopy={handleCopy} copiedId={copiedId}
+              onLocationChange={handleLocationChange} />
           </div>
           {filtered.length === 0 && (
             <div className="px-4 py-10 text-center text-sm text-navy-400">No vehicles match your filter.</div>
@@ -1001,14 +1092,16 @@ export default function MyVehicles({ user }) {
               </div>
               {group.vans.map((v) => (
                 <VehicleCardMobile key={v.fleetId} v={v} onClick={() => setEditVehicle(v)}
-                  onCopy={handleCopy} copiedId={copiedId} isVendor={isVendor} showDsp={false} />
+                  onCopy={handleCopy} copiedId={copiedId} isVendor={isVendor} showDsp={false}
+                  onLocationChange={handleLocationChange} />
               ))}
             </div>
           ))
         ) : (
           filtered.map((v) => (
             <VehicleCardMobile key={v.fleetId} v={v} onClick={() => setEditVehicle(v)}
-              onCopy={handleCopy} copiedId={copiedId} isVendor={isVendor} showDsp={isVendor} />
+              onCopy={handleCopy} copiedId={copiedId} isVendor={isVendor} showDsp={isVendor}
+              onLocationChange={handleLocationChange} />
           ))
         )}
         {filtered.length === 0 && (
