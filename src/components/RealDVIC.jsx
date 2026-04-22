@@ -6,7 +6,8 @@ import { daList, dvicDefects, dspRewards, dspList, weeklyInspections, defectCate
 import MetricCard from './ui/MetricCard';
 import ProgressBar from './ui/ProgressBar';
 import Badge from './ui/Badge';
-import FleetSnapshot, { FlexFleetModal } from './FleetSnapshot';
+import FleetSnapshot, { FlexFleetModal, VehicleReportCard, CreateWorkOrderModal } from './FleetSnapshot';
+import { fleetSnapshotVans } from '../data/mockData';
 
 const tierConfig = {
   1: { label: 'Tier 1', range: '1–25 defects', cash: '$1', bucks: '$1', color: '#3b82f6', bg: 'bg-accent-blue/10', border: 'border-accent-blue/30', pending: 1 },
@@ -225,7 +226,16 @@ const INSPECTOR_CATEGORIES = [
   { id: 'detailing', label: 'Detailing',    description: 'Cleaning / interior detail' },
 ];
 
-function InspectedDetailRenderer({ data }) {
+// Row backgrounds by severity / result
+const ROW_SEVERITY_STYLES = {
+  clean:     { bg: 'bg-accent-green/10 hover:bg-accent-green/15',   border: 'border-accent-green/30',  resultText: 'text-accent-green' },
+  low:       { bg: 'bg-accent-green/10 hover:bg-accent-green/15',   border: 'border-accent-green/30',  resultText: 'text-accent-green' },
+  medium:    { bg: 'bg-accent-gold/10 hover:bg-accent-gold/15',     border: 'border-accent-gold/30',   resultText: 'text-accent-gold' },
+  high:      { bg: 'bg-accent-orange/10 hover:bg-accent-orange/15', border: 'border-accent-orange/30', resultText: 'text-accent-orange' },
+  defective: { bg: 'bg-accent-red/10 hover:bg-accent-red/15',       border: 'border-accent-red/40',    resultText: 'text-accent-red' },
+};
+
+function InspectedDetailRenderer({ data, onOpenVehicleReport }) {
   const inspected = data.inspectedVans || [];
   const notInspected = data.notInspectedVans || [];
   const approveNew = data.approveNewVans || [];
@@ -247,12 +257,34 @@ function InspectedDetailRenderer({ data }) {
   const grounded = 1;
   const keysRecorded = total - grounded;
 
+  // Primary vendor = the vendor who did the most inspections today
+  const vendorCount = {};
+  inspected.forEach((v) => { vendorCount[v.vendor] = (vendorCount[v.vendor] || 0) + 1; });
+  const primaryVendor = Object.entries(vendorCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+
   const filteredInspected = activeCategories.length
     ? inspected.filter((v) => activeCategories.includes(v.category))
     : inspected;
 
+  // Map an inspected van to the fleetSnapshotVans record so we can open the
+  // existing Vehicle Report Card with real plate, mileage, defects, etc.
+  const handleRowClick = (v) => {
+    const flagged = v.result === 'Flagged' || v.severity === 'defective';
+    if (!flagged || !onOpenVehicleReport) return;
+    const fleetVan = fleetSnapshotVans.find((fv) => fv.id === v.id);
+    if (fleetVan) onOpenVehicleReport(fleetVan);
+  };
+
   return (
     <div className="space-y-4">
+      {/* Primary vendor chip */}
+      {primaryVendor && (
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-blue/10 border border-accent-blue/30 text-xs">
+          <span className="text-navy-400">Primary Vendor today:</span>
+          <span className="text-white font-semibold">{primaryVendor}</span>
+        </div>
+      )}
+
       {/* Stats band */}
       <div className="rounded-xl border border-navy-700/40 bg-navy-800/30 p-3">
         <div className="flex items-center gap-2 mb-2">
@@ -317,20 +349,33 @@ function InspectedDetailRenderer({ data }) {
           {filteredInspected.map((v) => {
             const sev = INSPECTED_SEVERITY_LEGEND.find((s) => s.id === v.severity);
             const cat = INSPECTOR_CATEGORIES.find((c) => c.id === v.category);
+            const style = ROW_SEVERITY_STYLES[v.severity] || ROW_SEVERITY_STYLES.clean;
+            const flagged = v.result === 'Flagged' || v.severity === 'defective';
+            const clickable = flagged && !!onOpenVehicleReport;
+            const defectCount = v.severity === 'defective' ? 5 : v.severity === 'high' ? 3 : v.severity === 'medium' ? 2 : 0;
             return (
-              <div key={v.id} className="flex items-center justify-between gap-3 bg-navy-800/40 border border-navy-700/40 rounded-lg px-3 py-2.5">
+              <div key={v.id}
+                onClick={() => handleRowClick(v)}
+                className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-all ${style.bg} ${style.border} ${
+                  clickable ? 'cursor-pointer hover:ring-1 hover:ring-white/20' : ''
+                }`}>
                 <div className="flex items-center gap-2 min-w-0 shrink-0">
                   <div className={`w-2.5 h-2.5 rounded-full ${sev?.dot || 'bg-navy-600'}`} />
                   <span className="text-sm font-semibold text-white font-mono">{v.id}</span>
                 </div>
                 <div className="flex-1 min-w-0 text-right">
-                  <div className="text-xs text-navy-200 truncate">
-                    <span className={v.result === 'Flagged' ? 'text-accent-orange font-semibold' : 'text-accent-green'}>{v.result}</span>
-                    {' '}&mdash; Tech: <span className="text-white">{v.tech}</span>
+                  <div className="text-xs truncate">
+                    {flagged && defectCount > 0 ? (
+                      <span className={`font-semibold ${style.resultText}`}>{defectCount} defects</span>
+                    ) : (
+                      <span className={`font-semibold ${style.resultText}`}>{v.result}</span>
+                    )}
+                    {' '}<span className="text-navy-300">&mdash; Tech:</span> <span className="text-white">{v.tech}</span>
                   </div>
-                  <div className="text-[11px] text-navy-400 truncate">
+                  <div className="text-[11px] text-navy-300 truncate">
                     Vendor: <span className="text-white font-medium">{v.vendor}</span>
                     {cat && <> <span className="text-navy-500">·</span> <Badge variant="blue">{cat.label}</Badge></>}
+                    {clickable && <span className="text-accent-blue ml-1">&rarr;</span>}
                   </div>
                 </div>
               </div>
@@ -340,6 +385,9 @@ function InspectedDetailRenderer({ data }) {
             <div className="text-center py-6 text-xs text-navy-400">No inspections match the selected filters.</div>
           )}
         </div>
+        {filteredInspected.some((v) => v.result === 'Flagged' || v.severity === 'defective') && (
+          <p className="text-[10px] text-navy-500 mt-2 italic">Tip: click on a flagged van to review accumulated defects and create work orders.</p>
+        )}
       </div>
 
       {/* Not inspected list */}
@@ -348,7 +396,7 @@ function InspectedDetailRenderer({ data }) {
           <h4 className="text-xs font-semibold text-accent-red mb-2 uppercase tracking-wide">Not Inspected ({notInspected.length})</h4>
           <div className="space-y-1.5">
             {notInspected.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-3 bg-accent-red/5 border border-accent-red/20 rounded-lg px-3 py-2">
+              <div key={v.id} className="flex items-center justify-between gap-3 bg-navy-800/50 border border-navy-700/40 rounded-lg px-3 py-2">
                 <span className="text-sm text-white font-medium font-mono">{v.id}</span>
                 <span className="text-[11px] text-navy-300">{v.reason}</span>
               </div>
@@ -375,7 +423,7 @@ function InspectedDetailRenderer({ data }) {
   );
 }
 
-function CardDetailModal({ cardKey, onClose }) {
+function CardDetailModal({ cardKey, onClose, onOpenVehicleReport }) {
   if (!cardKey) return null;
   const data = cardDetails[cardKey];
   const Icon = data.icon;
@@ -408,7 +456,7 @@ function CardDetailModal({ cardKey, onClose }) {
 
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           {cardKey === 'inspected' ? (
-            <InspectedDetailRenderer data={data} />
+            <InspectedDetailRenderer data={data} onOpenVehicleReport={onOpenVehicleReport} />
           ) : data.scheduledItems ? (
             <div className="space-y-3">
               {data.scheduledItems.map((it) => (
@@ -1755,6 +1803,9 @@ export default function RealDVIC({ user }) {
   const [showStartInspection, setShowStartInspection] = useState(false);
   const [showRepairHistory, setShowRepairHistory] = useState(false);
   const [showFlexFleet, setShowFlexFleet] = useState(false);
+  const [vehicleReportVan, setVehicleReportVan] = useState(null);
+  const [vanUpdates, setVanUpdates] = useState({});
+  const [createWOContext, setCreateWOContext] = useState(null); // { van, defect }
 
   // Completed WOs filtered by DSP (DSP owner sees only theirs; admin sees all)
   const repairedWOs = user?.role === 'dsp_owner'
@@ -2183,7 +2234,35 @@ export default function RealDVIC({ user }) {
       )}
 
       <AnimatePresence>
-        {openCard && <CardDetailModal cardKey={openCard} onClose={() => setOpenCard(null)} />}
+        {openCard && (
+          <CardDetailModal
+            cardKey={openCard}
+            onClose={() => setOpenCard(null)}
+            onOpenVehicleReport={(van) => {
+              // Close the Vans Inspected modal first, then pop the Vehicle Report Card
+              setOpenCard(null);
+              setVehicleReportVan({ ...van, ...(vanUpdates[van.id] || {}) });
+            }}
+          />
+        )}
+        {vehicleReportVan && (
+          <VehicleReportCard
+            van={vehicleReportVan}
+            onClose={() => setVehicleReportVan(null)}
+            onUpdateVan={(vanId, updates) => setVanUpdates({ ...vanUpdates, [vanId]: { ...(vanUpdates[vanId] || {}), ...updates } })}
+            userRole={user?.role}
+            onCreateWO={(van, defect) => setCreateWOContext({ van, defect })}
+          />
+        )}
+        {createWOContext && (
+          <CreateWorkOrderModal
+            initialVan={createWOContext.van}
+            initialDefect={createWOContext.defect}
+            vans={fleetSnapshotVans}
+            user={user}
+            onClose={() => setCreateWOContext(null)}
+          />
+        )}
         {showCreate && (
           <CreateDefectModal
             onClose={() => setShowCreate(false)}

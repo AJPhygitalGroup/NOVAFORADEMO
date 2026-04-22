@@ -238,7 +238,7 @@ function GroundVehicleModal({ van, onConfirm, onClose }) {
 }
 
 // ---------- Vehicle Report Card (drawer/bottom sheet) ----------
-function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreateWO }) {
+export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreateWO }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showGround, setShowGround] = useState(false);
   const [defectActions, setDefectActions] = useState({});
@@ -577,7 +577,7 @@ function VendorCard({ vendor, selected, onSelect, neededServices }) {
   );
 }
 
-function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, onClose, onCreate }) {
+export function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, onClose, onCreate }) {
   const [step, setStep] = useState(initialVan ? 2 : 1);
   // Step 1: vehicle + defect
   const [van, setVan] = useState(initialVan || null);
