@@ -104,13 +104,16 @@ const cardDetails = {
     ],
   },
   scheduled: {
-    title: 'Vehicle Repair Scheduled Tonight',
+    title: 'Scheduled Repairs',
     accent: 'accent-red',
     icon: Wrench,
-    summary: '2 vans scheduled for overnight repair — Immediate Action',
+    summary: '2 vans scheduled — Immediate Action',
+    // Items tagged by repairBucket to split the list into two groups in the modal:
+    //   'overnight' = expected to finish before dispatch time
+    //   'shop'      = likely to exceed dispatch window
     scheduledItems: [
-      { fleetId: 'VAN-5012', scheduledAt: 'Tonight, Apr 15 · 22:00 – 02:00', vendor: 'AMR', defect: 'Grinding noise — front brakes, feels spongy', severity: 'Critical', status: 'Rush Order' },
-      { fleetId: 'VAN-2009', scheduledAt: 'Tonight, Apr 15 · 20:00 – 23:00', vendor: 'Body Repairs', defect: 'Minor scratch on driver door', severity: 'Low', status: 'Scheduled' },
+      { fleetId: 'VAN-5012', scheduledAt: 'Tonight, Apr 15 · 22:00 – 02:00', vendor: 'AMR',          defect: 'Grinding noise — front brakes, feels spongy', severity: 'Critical', status: 'Rush Order', repairBucket: 'overnight' },
+      { fleetId: 'VAN-2009', scheduledAt: 'Tonight, Apr 15 · 20:00 – 23:00', vendor: 'Body Repairs', defect: 'Minor scratch on driver door',                severity: 'Low',      status: 'Scheduled',  repairBucket: 'shop' },
     ],
   },
 };
@@ -423,6 +426,47 @@ function InspectedDetailRenderer({ data, onOpenVehicleReport }) {
   );
 }
 
+// ============ Scheduled Repairs — split into Overnight + Shop buckets ============
+function ScheduledRepairsGrouped({ items }) {
+  const overnight = items.filter((i) => i.repairBucket === 'overnight' || i.status === 'Rush Order');
+  const shop = items.filter((i) => !(i.repairBucket === 'overnight' || i.status === 'Rush Order'));
+
+  return (
+    <div className="space-y-5">
+      {overnight.length > 0 && (
+        <section>
+          <div className="mb-2 px-3 py-2 rounded-lg bg-accent-red/10 border border-accent-red/30">
+            <div className="flex items-center gap-2 mb-0.5">
+              <Flame size={13} className="text-accent-red" />
+              <h4 className="text-sm font-semibold text-accent-red">Overnight Repair</h4>
+              <Badge variant="red">{overnight.length}</Badge>
+            </div>
+            <p className="text-[11px] text-navy-300 ml-5">Repair expected to be completed before dispatch time</p>
+          </div>
+          <div className="space-y-3">
+            {overnight.map((it) => <ScheduledRepairItem key={it.fleetId} item={it} />)}
+          </div>
+        </section>
+      )}
+      {shop.length > 0 && (
+        <section>
+          <div className="mb-2 px-3 py-2 rounded-lg bg-accent-orange/10 border border-accent-orange/30">
+            <div className="flex items-center gap-2 mb-0.5">
+              <Wrench size={13} className="text-accent-orange" />
+              <h4 className="text-sm font-semibold text-accent-orange">Shop Repair</h4>
+              <Badge variant="orange">{shop.length}</Badge>
+            </div>
+            <p className="text-[11px] text-navy-300 ml-5">Repair not likely to be completed before dispatch time</p>
+          </div>
+          <div className="space-y-3">
+            {shop.map((it) => <ScheduledRepairItem key={it.fleetId} item={it} />)}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
 function CardDetailModal({ cardKey, onClose, onOpenVehicleReport }) {
   if (!cardKey) return null;
   const data = cardDetails[cardKey];
@@ -458,11 +502,7 @@ function CardDetailModal({ cardKey, onClose, onOpenVehicleReport }) {
           {cardKey === 'inspected' ? (
             <InspectedDetailRenderer data={data} onOpenVehicleReport={onOpenVehicleReport} />
           ) : data.scheduledItems ? (
-            <div className="space-y-3">
-              {data.scheduledItems.map((it) => (
-                <ScheduledRepairItem key={it.fleetId} item={it} />
-              ))}
-            </div>
+            <ScheduledRepairsGrouped items={data.scheduledItems} />
           ) : data.groups ? (
             data.groups.map((g) => (
               <div key={g.heading}>
