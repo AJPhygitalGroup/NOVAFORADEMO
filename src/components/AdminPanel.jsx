@@ -9,7 +9,7 @@ import {
   LifeBuoy, Gauge, MonitorSmartphone, ThermometerSun, HelpCircle, Zap as ZapIcon,
   Ban, CheckCheck, ExternalLink, UserCircle
 } from 'lucide-react';
-import { orgUsers, AVAILABLE_ROLES, rolesAssignableBy, preventiveMaintenanceJobs, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS } from '../data/mockData';
+import { orgUsers, AVAILABLE_ROLES, rolesAssignableBy, preventiveMaintenanceJobs, pmIntervalsByVehicleType, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS } from '../data/mockData';
 import Badge from './ui/Badge';
 
 const DEFECT_CATEGORY_ICONS = {
@@ -833,56 +833,175 @@ function PMTab({ user }) {
         <StatBox label="Total" value={jobs.length} color="text-white" />
       </div>
 
-      <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-navy-800 bg-navy-950/40 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">Scheduled PM Jobs</h3>
-          <button className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-accent-green text-white text-xs font-semibold hover:opacity-90 cursor-pointer">
-            <Plus size={12} /> Schedule PM
-          </button>
-        </div>
-        <div className="divide-y divide-navy-800/60">
-          {jobs.map((j) => {
-            const progressPct = j.triggerType === 'mileage' && j.currentValue
-              ? Math.round((j.currentValue / j.triggerAt) * 100)
-              : null;
-            const daysUntil = j.dueAt ? Math.ceil((new Date(j.dueAt) - new Date()) / (1000 * 60 * 60 * 24)) : null;
-            return (
-              <div key={j.id} className="px-4 py-3 hover:bg-navy-800/40 transition-colors">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-sm font-semibold text-white">{j.type}</span>
-                      <Badge variant="gray">{j.vehicleId}</Badge>
-                      <Badge variant={j.status === 'upcoming' ? 'gold' : 'blue'}>{j.status === 'upcoming' ? 'Upcoming' : 'Scheduled'}</Badge>
+      {/* Two-column: Upcoming PMs (left) + PM Intervals by Vehicle Type (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* LEFT: Upcoming PMs */}
+        <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-navy-800 bg-navy-950/40 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white">Upcoming PMs</h3>
+            <button className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-accent-green text-white text-xs font-semibold hover:opacity-90 cursor-pointer">
+              <Plus size={12} /> Schedule PM
+            </button>
+          </div>
+          <div className="divide-y divide-navy-800/60 max-h-[560px] overflow-y-auto">
+            {jobs.map((j) => {
+              const progressPct = j.triggerType === 'mileage' && j.currentValue
+                ? Math.round((j.currentValue / j.triggerAt) * 100)
+                : null;
+              const daysUntil = j.dueAt ? Math.ceil((new Date(j.dueAt) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+              return (
+                <div key={j.id} className="px-4 py-3 hover:bg-navy-800/40 transition-colors">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-sm font-semibold text-white">{j.type}</span>
+                        <Badge variant="gray">{j.vehicleId}</Badge>
+                        <Badge variant={j.status === 'upcoming' ? 'gold' : 'blue'}>{j.status === 'upcoming' ? 'Upcoming' : 'Scheduled'}</Badge>
+                      </div>
+                      <div className="text-[11px] text-navy-400">Vendor: <span className="text-white">{j.vendor}</span></div>
                     </div>
-                    <div className="text-[11px] text-navy-400">Vendor: <span className="text-white">{j.vendor}</span></div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[11px] text-navy-400">Due</div>
+                      <div className="text-xs text-white font-semibold">{j.dueAt}</div>
+                      {daysUntil !== null && <div className={`text-[10px] ${daysUntil <= 3 ? 'text-accent-red' : daysUntil <= 7 ? 'text-accent-gold' : 'text-navy-500'}`}>{daysUntil} days</div>}
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-[11px] text-navy-400">Due</div>
-                    <div className="text-xs text-white font-semibold">{j.dueAt}</div>
-                    {daysUntil !== null && <div className={`text-[10px] ${daysUntil <= 3 ? 'text-accent-red' : daysUntil <= 7 ? 'text-accent-gold' : 'text-navy-500'}`}>{daysUntil} days</div>}
-                  </div>
+                  {progressPct !== null && (
+                    <div>
+                      <div className="flex justify-between text-[10px] text-navy-400 mb-1">
+                        <span>{j.currentValue?.toLocaleString()} mi</span>
+                        <span>Trigger: {j.triggerAt.toLocaleString()} mi</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-navy-800 overflow-hidden">
+                        <motion.div className={`h-full rounded-full ${progressPct >= 95 ? 'bg-accent-red' : progressPct >= 85 ? 'bg-accent-orange' : 'bg-accent-green'}`}
+                          initial={{ width: 0 }} animate={{ width: `${Math.min(progressPct, 100)}%` }} transition={{ duration: 0.8 }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {progressPct !== null && (
-                  <div>
-                    <div className="flex justify-between text-[10px] text-navy-400 mb-1">
-                      <span>{j.currentValue?.toLocaleString()} mi</span>
-                      <span>Trigger: {j.triggerAt.toLocaleString()} mi</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-navy-800 overflow-hidden">
-                      <motion.div className={`h-full rounded-full ${progressPct >= 95 ? 'bg-accent-red' : progressPct >= 85 ? 'bg-accent-orange' : 'bg-accent-green'}`}
-                        initial={{ width: 0 }} animate={{ width: `${Math.min(progressPct, 100)}%` }} transition={{ duration: 0.8 }} />
-                    </div>
-                  </div>
+              );
+            })}
+            {jobs.length === 0 && (
+              <div className="px-4 py-10 text-center text-sm text-navy-400">No PM jobs scheduled.</div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: PM Intervals by Vehicle Type */}
+        <PMIntervalsPanel />
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PM Intervals by Vehicle Type — editable except for Branded
+// ============================================================
+function PMIntervalsPanel() {
+  // Local editable copy so the customer can tweak non-branded intervals in demo
+  const [groups, setGroups] = useState(() =>
+    pmIntervalsByVehicleType.map((g) => ({ ...g, intervals: g.intervals.map((i) => ({ ...i, milesList: i.milesList ? [...i.milesList] : undefined })) }))
+  );
+  const [editingGroup, setEditingGroup] = useState(null);
+
+  const saveInterval = (typeIdx, intervalId, patch) => {
+    setGroups((prev) => prev.map((g, i) => {
+      if (i !== typeIdx) return g;
+      return { ...g, intervals: g.intervals.map((it) => (it.id === intervalId ? { ...it, ...patch } : it)) };
+    }));
+  };
+
+  return (
+    <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl overflow-hidden flex flex-col">
+      <div className="px-4 py-3 border-b border-navy-800 bg-navy-950/40 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Gauge size={14} className="text-accent-blue" />
+          <h3 className="text-sm font-semibold text-white">PM Intervals by Vehicle Type</h3>
+        </div>
+        <span className="text-[11px] text-navy-400">{groups.length} types</span>
+      </div>
+      <div className="divide-y divide-navy-800/60 max-h-[560px] overflow-y-auto">
+        {groups.map((g, typeIdx) => {
+          const isEditing = editingGroup === g.type;
+          return (
+            <div key={g.type} className="px-4 py-3">
+              {/* Type header */}
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Badge variant={g.type === 'Rental' ? 'purple' : g.type === 'Owned' ? 'blue' : g.type === 'Step Van' ? 'gold' : 'gray'} size="md">{g.type}</Badge>
+                  {g.locked ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-navy-400">
+                      <Lock size={10} /> Read-only
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-navy-500">{g.intervals.length} intervals</span>
+                  )}
+                </div>
+                {!g.locked && (
+                  <button
+                    onClick={() => setEditingGroup(isEditing ? null : g.type)}
+                    className={`text-[11px] font-semibold cursor-pointer ${isEditing ? 'text-accent-green' : 'text-accent-blue hover:underline'}`}>
+                    {isEditing ? <><Check size={11} className="inline mr-0.5" /> Done</> : <><Edit3 size={10} className="inline mr-0.5" /> Edit intervals</>}
+                  </button>
                 )}
               </div>
-            );
-          })}
-          {jobs.length === 0 && (
-            <div className="px-4 py-10 text-center text-sm text-navy-400">No PM jobs scheduled.</div>
-          )}
-        </div>
+
+              {g.locked && g.lockReason && (
+                <div className="flex items-start gap-1.5 text-[10px] text-navy-400 mb-2 italic">
+                  <Info size={10} className="text-navy-500 mt-0.5 shrink-0" />
+                  {g.lockReason}
+                </div>
+              )}
+
+              {/* Interval rows */}
+              <div className="space-y-1">
+                {g.intervals.map((i) => (
+                  <IntervalRow key={i.id} interval={i} editable={!g.locked && isEditing}
+                    onChange={(patch) => saveInterval(typeIdx, i.id, patch)} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function IntervalRow({ interval, editable, onChange }) {
+  const [localMiles, setLocalMiles] = useState(interval.miles ?? interval.milesList?.join(', ') ?? '');
+
+  const handleSave = () => {
+    if (interval.mode === 'every') {
+      const n = parseInt(localMiles.toString().replace(/,/g, ''), 10);
+      if (!isNaN(n)) onChange({ miles: n });
+    } else if (interval.mode === 'at') {
+      const list = localMiles.toString().split(',').map((s) => parseInt(s.trim().replace(/,/g, ''), 10)).filter((n) => !isNaN(n));
+      if (list.length > 0) onChange({ milesList: list });
+    }
+  };
+
+  const displayValue = interval.mode === 'every'
+    ? `Due every ${interval.miles?.toLocaleString()} miles`
+    : `Due at ${interval.milesList?.map((n) => n.toLocaleString()).join('; ')} miles`;
+
+  return (
+    <div className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-xs ${
+      editable ? 'bg-navy-800/60 border border-navy-700' : 'hover:bg-navy-800/30'
+    }`}>
+      <span className="text-white truncate">{interval.service}</span>
+      {editable ? (
+        <div className="flex items-center gap-1 shrink-0">
+          {interval.mode === 'every' ? <span className="text-[10px] text-navy-400">every</span> : <span className="text-[10px] text-navy-400">at</span>}
+          <input value={localMiles} onChange={(e) => setLocalMiles(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            className="w-24 text-right rounded-md px-2 py-0.5 text-xs font-mono bg-navy-900 border border-navy-700 text-white outline-none focus:border-accent-blue" />
+          <span className="text-[10px] text-navy-400">mi</span>
+        </div>
+      ) : (
+        <span className="text-navy-300 text-right truncate">{displayValue}</span>
+      )}
     </div>
   );
 }

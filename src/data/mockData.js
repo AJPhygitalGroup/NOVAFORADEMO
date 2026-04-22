@@ -210,6 +210,48 @@ export function rolesAssignableBy(orgType) {
   return AVAILABLE_ROLES.filter((r) => r.appliesTo === 'both' || r.appliesTo === orgType);
 }
 
+// PM intervals grouped by vehicle type. Branded Cargo is managed by Amazon
+// and read-only; the other classes are editable by the DSP owner.
+export const pmIntervalsByVehicleType = [
+  {
+    type: 'Branded Cargo',
+    locked: true,
+    lockReason: 'Managed by Amazon — intervals are standardized across the Branded Cargo fleet',
+    intervals: [
+      { id: 'bc-oil',     service: 'Synthetic oil change',      mode: 'every', miles: 6000 },
+      { id: 'bc-diff',    service: 'Rear differential service', mode: 'every', miles: 240000 },
+      { id: 'bc-plugs',   service: 'Spark plugs',               mode: 'every', miles: 100000 },
+    ],
+  },
+  {
+    type: 'Step Van',
+    locked: false,
+    intervals: [
+      { id: 'sv-cabin',   service: 'Cabin air filter',          mode: 'every', miles: 40000 },
+      { id: 'sv-belt',    service: 'Serpentine belt',           mode: 'every', miles: 80000 },
+      { id: 'sv-trans',   service: '5VC auto transmission',     mode: 'at',    milesList: [40000, 100000, 160000] },
+    ],
+  },
+  {
+    type: 'Owned',
+    locked: false,
+    intervals: [
+      { id: 'ow-plugs',   service: 'Spark plugs',               mode: 'every', miles: 96000 },
+      { id: 'ow-coolant', service: 'Coolant system service',    mode: 'every', miles: 96000 },
+      { id: 'ow-diff',    service: 'Rear differential service', mode: 'every', miles: 150000 },
+    ],
+  },
+  {
+    type: 'Rental',
+    locked: false,
+    intervals: [
+      { id: 'rn-oil',     service: 'Oil change',                mode: 'every', miles: 5000 },
+      { id: 'rn-tires',   service: 'Tire rotation',             mode: 'every', miles: 7500 },
+      { id: 'rn-brakes',  service: 'Brake inspection',          mode: 'every', miles: 25000 },
+    ],
+  },
+];
+
 export const preventiveMaintenanceJobs = [
   { id: 'PM-001', vehicleId: 'VAN-1042', dspId: 'DSP-4201', type: 'Oil Change',        triggerType: 'mileage',  triggerAt: 50000, currentValue: 48250, status: 'upcoming', dueAt: '2026-04-25', vendor: 'ProFleet Auto Care' },
   { id: 'PM-002', vehicleId: 'VAN-1058', dspId: 'DSP-4201', type: 'Tire Rotation',     triggerType: 'mileage',  triggerAt: 35000, currentValue: 33980, status: 'upcoming', dueAt: '2026-04-28', vendor: 'Discount Tire Commercial' },
