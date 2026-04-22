@@ -77,7 +77,7 @@ function SeverityLegend() {
 }
 
 // ---------- Flex Fleet Modal ----------
-function FlexFleetModal({ onClose }) {
+export function FlexFleetModal({ onClose }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [vanCount, setVanCount] = useState(5);
@@ -867,7 +867,7 @@ function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, onClose, 
 }
 
 // ---------- Main Component ----------
-export default function FleetSnapshot({ user }) {
+export default function FleetSnapshot({ user, embedded = false }) {
   const [selectedVan, setSelectedVan] = useState(null);
   const [showFlexFleet, setShowFlexFleet] = useState(false);
   const [showCreateWO, setShowCreateWO] = useState(false);
@@ -938,11 +938,13 @@ export default function FleetSnapshot({ user }) {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-2xl font-bold text-white mb-1">Fleet Snapshot</h2>
-        <p className="text-navy-400 text-sm">Heatmap view &mdash; defect severity at a glance, per vehicle</p>
-      </div>
+      {/* Header — hidden when embedded (Real DVIC renders its own header) */}
+      {!embedded && (
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-2xl font-bold text-white mb-1">QC DVIC</h2>
+          <p className="text-navy-400 text-sm">Heatmap view &mdash; defect severity at a glance, per vehicle</p>
+        </div>
+      )}
 
       {/* Summary card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -1010,14 +1012,6 @@ export default function FleetSnapshot({ user }) {
               <button onClick={() => openCreateWO()}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent-blue text-white text-xs font-semibold hover:opacity-90 cursor-pointer shadow-lg shadow-accent-blue/20">
                 <ClipboardList size={12} /> Create Work Order
-              </button>
-            )}
-
-            {/* Flex Fleet */}
-            {isDsp && (
-              <button onClick={() => setShowFlexFleet(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent-purple/15 border border-accent-purple/40 text-accent-purple text-xs font-semibold hover:bg-accent-purple/25 cursor-pointer">
-                <Truck size={12} /> Order Flex Fleet
               </button>
             )}
           </div>

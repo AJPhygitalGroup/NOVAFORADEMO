@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, Wrench, ChevronRight, Menu, X, Sun, Moon, Bell,
-  LayoutGrid, Truck, ClipboardList, Settings, Eye, Star
+  LayoutGrid, Truck, ClipboardList, Settings, Eye, Star, Home as HomeIcon, Gift
 } from 'lucide-react';
 import VendorScorecard from './VendorScorecard';
 import RealDVIC from './RealDVIC';
@@ -12,19 +12,20 @@ import MyVehicles from './MyVehicles';
 import WorkOrders from './WorkOrders';
 import AdminPanel from './AdminPanel';
 import GhostMode from './GhostMode';
+import Rewards from './Rewards';
 import NotificationsPanel from './NotificationsPanel';
 import RoleSwitcher from './ui/RoleSwitcher';
 import { rolePermissions, notificationsSeed } from '../data/mockData';
 
 // View catalog — id, label, subtitle, icon, accent color, component
 const VIEW_CATALOG = {
-  home:        { id: 'home',        label: 'Home',             subtitle: 'Fleet Snapshot',           icon: LayoutGrid,     color: 'text-accent-blue',   Component: FleetSnapshot },
-  dvic:        { id: 'dvic',        label: 'Real DVIC',        subtitle: 'Safety & Rewards',         icon: Shield,         color: 'text-accent-green',  Component: RealDVIC },
-  snapshot:    { id: 'snapshot',    label: 'Fleet Snapshot',   subtitle: 'Heatmap view',             icon: LayoutGrid,     color: 'text-accent-blue',   Component: FleetSnapshot },
+  dvic:        { id: 'dvic',        label: 'Home',             subtitle: 'Command center',           icon: HomeIcon,       color: 'text-accent-green',  Component: RealDVIC },
+  snapshot:    { id: 'snapshot',    label: 'QC DVIC',          subtitle: 'Heatmap view',             icon: LayoutGrid,     color: 'text-accent-blue',   Component: FleetSnapshot },
   vehicles:    { id: 'vehicles',    label: 'Vehicles',         subtitle: 'Fleet directory',          icon: Truck,          color: 'text-accent-green',  Component: MyVehicles },
   work_orders: { id: 'work_orders', label: 'Work Orders',      subtitle: 'Vendor hub',               icon: ClipboardList,  color: 'text-accent-purple', Component: WorkOrders },
   body:        { id: 'body',        label: 'Body Repairs',     subtitle: 'Enhanced Portal',          icon: Wrench,         color: 'text-accent-purple', Component: BodyRepairs },
   scorecard:   { id: 'scorecard',   label: 'Vendor Scorecard', subtitle: 'DFS Value Proposition',    icon: BarChart3,      color: 'text-accent-blue',   Component: VendorScorecard },
+  rewards:     { id: 'rewards',     label: 'Rewards',          subtitle: 'DA + DSP loyalty',         icon: Gift,           color: 'text-accent-gold',   Component: Rewards },
   admin:       { id: 'admin',       label: 'Admin',            subtitle: 'Users, org, security',     icon: Settings,       color: 'text-accent-gold',   Component: AdminPanel },
   ghost:       { id: 'ghost',       label: 'Ghost Mode',       subtitle: 'Impersonate users',        icon: Eye,            color: 'text-accent-red',    Component: GhostMode },
 };

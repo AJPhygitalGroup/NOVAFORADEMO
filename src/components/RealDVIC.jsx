@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Shield, ShieldCheck, AlertTriangle, Award, TrendingUp, Users, Flame, Camera, Gift, Lock, Star, Plus, Hourglass, CheckCheck, X, Clock, Wrench, CheckCircle2, Calendar, KeyRound, ChevronRight, Info, SkipForward, PlayCircle, ClipboardCheck, ChevronDown, Check, ArrowRight, Bell } from 'lucide-react';
+import { Shield, ShieldCheck, AlertTriangle, Award, TrendingUp, Users, Flame, Camera, Gift, Lock, Star, Plus, Hourglass, CheckCheck, X, Clock, Wrench, CheckCircle2, Calendar, KeyRound, ChevronRight, Info, SkipForward, PlayCircle, ClipboardCheck, ChevronDown, Check, ArrowRight, Bell, LayoutGrid, Truck } from 'lucide-react';
 import { daList, dvicDefects, dspRewards, dspList, weeklyInspections, defectCategoryBreakdown, inspectionSections, workOrdersData } from '../data/mockData';
 import MetricCard from './ui/MetricCard';
 import ProgressBar from './ui/ProgressBar';
 import Badge from './ui/Badge';
+import FleetSnapshot, { FlexFleetModal } from './FleetSnapshot';
 
 const tierConfig = {
   1: { label: 'Tier 1', range: '1–25 defects', cash: '$1', bucks: '$1', color: '#3b82f6', bg: 'bg-accent-blue/10', border: 'border-accent-blue/30', pending: 1 },
@@ -1591,6 +1592,7 @@ export default function RealDVIC({ user }) {
   const [showInspection, setShowInspection] = useState(false);
   const [showStartInspection, setShowStartInspection] = useState(false);
   const [showRepairHistory, setShowRepairHistory] = useState(false);
+  const [showFlexFleet, setShowFlexFleet] = useState(false);
 
   // Completed WOs filtered by DSP (DSP owner sees only theirs; admin sees all)
   const repairedWOs = user?.role === 'dsp_owner'
@@ -1610,12 +1612,14 @@ export default function RealDVIC({ user }) {
   const notInspected = 7;
   const newToApprove = 2;
 
-  // Tab order: Overview → DA Rewards → Today's Defects → DSP Rewards
+  // Sub-tabs for DSP Owner home:
+  //   Overview · Today's Defects · QC DVIC (embedded fleet snapshot)
+  // DA / DSP Rewards moved to a dedicated Rewards top-level tab.
+  const isDspHome = user?.role === 'dsp_owner' || user?.role === 'site_admin';
   const sections = [
     { id: 'overview', label: 'Overview', icon: Shield },
-    { id: 'leaderboard', label: 'DA Rewards', icon: Award },
     { id: 'defects', label: "Today's Defects", icon: AlertTriangle },
-    { id: 'rewards', label: 'DSP Rewards', icon: Gift },
+    ...(isDspHome ? [{ id: 'snapshot', label: 'QC DVIC', icon: LayoutGrid }] : []),
   ];
 
   const canStartInspection = user?.role === 'vendor_admin' || user?.role === 'technician' || user?.role === 'site_admin';
@@ -1652,14 +1656,9 @@ export default function RealDVIC({ user }) {
         </motion.div>
       )}
 
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white mb-1">Real DVIC</h2>
-        <p className="text-navy-400 text-sm">Daily Vehicle Inspection Check &mdash; Safety pillar, reduced attrition & DA rewards</p>
-      </div>
-
-      {/* Section Tabs + Create New (only on defects) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div className="flex flex-wrap gap-2">
+      {/* Section Tabs + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
+        <div className="flex flex-wrap gap-2 items-center">
           {sections.map((s) => {
             const Icon = s.icon;
             return (
@@ -1673,6 +1672,14 @@ export default function RealDVIC({ user }) {
               </button>
             );
           })}
+          {/* Order Flex Fleet — DSP Owner + Site Admin only, available from any sub-tab */}
+          {isDspHome && (
+            <button onClick={() => setShowFlexFleet(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent-purple/15 border border-accent-purple/40 text-accent-purple hover:bg-accent-purple/25 transition-all cursor-pointer">
+              <Truck size={15} />
+              Order Flex Fleet
+            </button>
+          )}
         </div>
         {activeSection === 'defects' && (
           <div className="flex items-center gap-2">
@@ -1844,8 +1851,15 @@ export default function RealDVIC({ user }) {
         </div>
       )}
 
-      {/* DSP Rewards (formerly DSP Loyalty) */}
-      {activeSection === 'rewards' && (
+      {/* QC DVIC — Fleet Snapshot embedded for DSP Owner */}
+      {activeSection === 'snapshot' && (
+        <div className="-mt-2">
+          <FleetSnapshot user={user} embedded />
+        </div>
+      )}
+
+      {/* DSP Rewards (formerly DSP Loyalty) — moved to /rewards tab, kept here for legacy only */}
+      {activeSection === 'rewards_legacy_removed' && (
         <div className="space-y-4">
           <div className="mb-2">
             <h3 className="text-base font-semibold text-white mb-1">DSP Loyalty Program</h3>
@@ -1919,8 +1933,8 @@ export default function RealDVIC({ user }) {
         </div>
       )}
 
-      {/* DA Leaderboard with Award Status column */}
-      {activeSection === 'leaderboard' && (
+      {/* DA Leaderboard — moved to /rewards tab, kept here as legacy only */}
+      {activeSection === 'leaderboard_legacy_removed' && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl overflow-hidden"
         >
@@ -2017,6 +2031,7 @@ export default function RealDVIC({ user }) {
         {showInspection && <InspectionReadinessModal onClose={() => setShowInspection(false)} />}
         {showStartInspection && <StartInspectionModal user={user} onClose={() => setShowStartInspection(false)} />}
         {showRepairHistory && <RepairHistoryModal repairedWOs={repairedWOs} user={user} onClose={() => setShowRepairHistory(false)} />}
+        {showFlexFleet && <FlexFleetModal onClose={() => setShowFlexFleet(false)} />}
       </AnimatePresence>
     </div>
   );
