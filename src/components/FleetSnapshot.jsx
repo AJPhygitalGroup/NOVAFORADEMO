@@ -529,6 +529,9 @@ export function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, on
   const [description, setDescription] = useState(initialDefect?.description || '');
   const [severity, setSeverity] = useState(initialDefect?.severity || 'Medium');
   const [isRush, setIsRush] = useState(initialDefect?.severity === 'Critical');
+  const [damagePhotos, setDamagePhotos] = useState([]);
+  const [isPM, setIsPM] = useState(false);
+  const [pmType, setPmType] = useState('Oil Change');
   // Step 2: vendor
   const [vendor, setVendor] = useState(null);
   // Step 3: review
@@ -549,7 +552,10 @@ export function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, on
     return b.rating - a.rating;
   });
 
-  const canGoNext = step === 1 ? (van && section && description.length > 4) : step === 2 ? !!vendor : true;
+  // Step 1 validity: defect mode needs section + description; PM mode only needs vehicle + PM type
+  const canGoNext = step === 1
+    ? (van && (isPM ? !!pmType : (section && description.length > 4)))
+    : step === 2 ? !!vendor : true;
 
   const handleSubmit = () => {
     setSubmitting(true);
@@ -678,64 +684,158 @@ export function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, on
                   </div>
                 </div>
 
-                {/* Section */}
-                <div>
-                  <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Vehicle section</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    {INSPECTION_SECTIONS.map((s) => (
-                      <button key={s.id} onClick={() => setSection(s.id)}
-                        className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer min-h-[44px] ${
-                          section === s.id ? 'bg-accent-blue/15 border-accent-blue/50 text-white' : 'bg-navy-800 border-navy-700 text-navy-300 hover:border-navy-600'
-                        }`}>
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
+                {/* Mode toggle — defect vs scheduled PM */}
+                <div className="flex items-center gap-2 p-1 rounded-lg bg-navy-800/60 border border-navy-700/40 w-fit">
+                  <button onClick={() => setIsPM(false)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                      !isPM ? 'bg-accent-blue text-white' : 'text-navy-400 hover:text-white'
+                    }`}>
+                    <AlertTriangle size={11} /> Defect repair
+                  </button>
+                  <button onClick={() => setIsPM(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                      isPM ? 'bg-accent-green text-white' : 'text-navy-400 hover:text-white'
+                    }`}>
+                    <Plus size={11} /> Schedule PM
+                  </button>
                 </div>
+
+                {/* PM mode: show PM type selector instead of Section */}
+                {isPM ? (
+                  <div>
+                    <label className="text-xs font-semibold text-navy-300 mb-1.5 block">PM service type</label>
+                    <select value={pmType} onChange={(e) => setPmType(e.target.value)}
+                      className="w-full rounded-lg px-3 py-3 text-base bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green cursor-pointer">
+                      <option>Oil Change</option>
+                      <option>Tire Rotation</option>
+                      <option>Brake Inspection</option>
+                      <option>Full Service</option>
+                      <option>Alignment</option>
+                      <option>Coolant Flush</option>
+                      <option>Transmission Service</option>
+                      <option>Cabin Air Filter</option>
+                      <option>Other PM</option>
+                    </select>
+                    <p className="text-[10px] text-navy-400 mt-1">No inspection required — scheduled preventive maintenance.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Vehicle section</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      {INSPECTION_SECTIONS.map((s) => (
+                        <button key={s.id} onClick={() => setSection(s.id)}
+                          className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer min-h-[44px] ${
+                            section === s.id ? 'bg-accent-blue/15 border-accent-blue/50 text-white' : 'bg-navy-800 border-navy-700 text-navy-300 hover:border-navy-600'
+                          }`}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Part */}
                 <div>
                   <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Part (optional)</label>
                   <input value={part} onChange={(e) => setPart(e.target.value)}
-                    placeholder="e.g. Windshield, Brake pads, Headlight"
+                    placeholder={isPM ? 'e.g. Oil filter, Brake pads' : 'e.g. Windshield, Brake pads, Headlight'}
                     className="w-full rounded-lg px-3 py-3 text-base bg-navy-800 border border-navy-700 text-white placeholder-navy-500 outline-none focus:border-accent-blue" />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Description</label>
+                  <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Description{isPM ? ' (optional)' : ''}</label>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
-                    placeholder="e.g. Crack in windshield spreading from stone chip — driver side, approximately 8 inches"
+                    placeholder={isPM ? 'e.g. Routine 5,000 mi synthetic oil change' : 'e.g. Crack in windshield spreading from stone chip — driver side, approximately 8 inches'}
                     className="w-full rounded-lg px-3 py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white placeholder-navy-500 outline-none focus:border-accent-blue resize-none" />
                 </div>
 
-                {/* Severity */}
-                <div>
-                  <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Severity</label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {WO_SEVERITY_OPTIONS.map((s) => {
-                      const active = severity === s;
-                      const color = WO_SEVERITY_COLORS[s];
-                      return (
-                        <button key={s} onClick={() => { setSeverity(s); if (s === 'Critical') setIsRush(true); }}
-                          className={`px-2 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer min-h-[44px] ${
-                            active
-                              ? `bg-accent-${color}/20 border-accent-${color}/50 text-accent-${color}`
-                              : 'bg-navy-800 border-navy-700 text-navy-300 hover:border-navy-600'
-                          }`}>{s}</button>
-                      );
-                    })}
+                {/* Damage photos — shown for defect repair mode */}
+                {!isPM && (
+                  <div>
+                    <label className="text-xs font-semibold text-navy-300 mb-1.5 block flex items-center gap-1.5">
+                      <ImageIcon size={12} className="text-accent-blue" /> Damage Photos
+                    </label>
+                    <label className={`block border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all hover:bg-navy-800/40 ${
+                      damagePhotos.length > 0 ? 'border-accent-blue/50 bg-accent-blue/5' : 'border-navy-700/60 bg-navy-800/20'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-accent-blue/15 flex items-center justify-center shrink-0">
+                          <Camera size={18} className="text-accent-blue" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white">Damage Photos</div>
+                          <div className="text-[11px] text-navy-400">JPG/PNG &mdash; wide shot + close-ups recommended</div>
+                          <div className="text-[11px] text-navy-500 mt-1">Click to browse or drop multiple files</div>
+                        </div>
+                        <Send size={14} className="text-navy-400 mt-1 rotate-180" />
+                      </div>
+                      <input type="file" accept="image/*" multiple className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            const arr = Array.from(e.target.files).map((f) => ({ name: f.name, size: f.size }));
+                            setDamagePhotos([...damagePhotos, ...arr]);
+                          }
+                        }} />
+                    </label>
+                    {damagePhotos.length > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        {damagePhotos.map((f, i) => (
+                          <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-navy-800/60 border border-navy-700/40">
+                            <Check size={12} className="text-accent-blue shrink-0" />
+                            <span className="text-xs text-white truncate flex-1">{f.name}</span>
+                            <span className="text-[10px] text-navy-400">{(f.size / 1024).toFixed(0)} KB</span>
+                            <button onClick={(e) => { e.preventDefault(); setDamagePhotos(damagePhotos.filter((_, j) => j !== i)); }}
+                              className="text-navy-400 hover:text-accent-red">
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
 
-                {/* Rush order toggle */}
-                <label className="flex items-start gap-3 p-3 rounded-lg bg-navy-800/40 border border-navy-700/40 cursor-pointer hover:border-navy-600">
-                  <input type="checkbox" checked={isRush} onChange={() => setIsRush(!isRush)} className="mt-0.5 w-5 h-5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5"><Flame size={12} className="text-accent-red" /><span className="text-sm font-semibold text-white">Mark as Rush Order</span></div>
-                    <div className="text-[11px] text-navy-400">Vendor is asked to schedule this tonight. Expect a priority fee.</div>
+                {/* Severity — hidden for PM mode */}
+                {!isPM && (
+                  <div>
+                    <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Severity</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {WO_SEVERITY_OPTIONS.map((s) => {
+                        const active = severity === s;
+                        const color = WO_SEVERITY_COLORS[s];
+                        return (
+                          <button key={s} onClick={() => { setSeverity(s); if (s === 'Critical') setIsRush(true); }}
+                            className={`px-2 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer min-h-[44px] ${
+                              active
+                                ? `bg-accent-${color}/20 border-accent-${color}/50 text-accent-${color}`
+                                : 'bg-navy-800 border-navy-700 text-navy-300 hover:border-navy-600'
+                            }`}>{s}</button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </label>
+                )}
+
+                {/* Rush order toggle — hidden for PM mode */}
+                {!isPM && (
+                  <label className="flex items-start gap-3 p-3 rounded-lg bg-navy-800/40 border border-navy-700/40 cursor-pointer hover:border-navy-600">
+                    <input type="checkbox" checked={isRush} onChange={() => setIsRush(!isRush)} className="mt-0.5 w-5 h-5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5"><Flame size={12} className="text-accent-red" /><span className="text-sm font-semibold text-white">Mark as Rush Order</span></div>
+                      <div className="text-[11px] text-navy-400">Vendor is asked to schedule this tonight. Expect a priority fee.</div>
+                    </div>
+                  </label>
+                )}
+
+                {/* PM scheduled date — only in PM mode */}
+                {isPM && (
+                  <div>
+                    <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Scheduled date</label>
+                    <input type="date" value={preferredDate} onChange={(e) => setPreferredDate(e.target.value)}
+                      className="w-full rounded-lg px-3 py-3 text-base bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green" />
+                  </div>
+                )}
               </motion.div>
             ) : step === 2 ? (
               <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">

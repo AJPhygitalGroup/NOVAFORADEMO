@@ -2075,7 +2075,11 @@ export default function RealDVIC({ user }) {
                 <div className="w-10 h-10 rounded-lg bg-accent-green/10 flex items-center justify-center">
                   <Shield size={20} className="text-accent-green" />
                 </div>
-                <button onClick={(e) => e.stopPropagation()} className="w-9 h-9 rounded-full bg-accent-blue/15 border border-accent-blue/40 text-accent-blue hover:bg-accent-blue/25 transition-colors cursor-pointer flex items-center justify-center" title="Approve new defects">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCreateWOContext({ van: null, defect: null }); }}
+                  className="w-9 h-9 rounded-full bg-accent-blue/15 border border-accent-blue/40 text-accent-blue hover:bg-accent-blue/25 transition-colors cursor-pointer flex items-center justify-center"
+                  title="Create work order (no inspection required)"
+                >
                   <Plus size={18} />
                 </button>
               </div>
