@@ -72,40 +72,34 @@ const cardDetails = {
     accent: 'accent-blue',
     icon: TrendingUp,
     summary: '23 inspected · 7 not inspected · 2 new to approve',
-    groups: [
-      {
-        heading: 'Inspected (23)',
-        color: 'green',
-        items: [
-          { label: 'VAN-1042', meta: 'Passed — Tech: Carlos Mendez (AMR)' },
-          { label: 'VAN-1018', meta: 'Passed — Tech: Brian O\'Connor (AMR)' },
-          { label: 'VAN-2009', meta: 'Passed — Tech: Luis Ramirez (Body Repairs)' },
-          { label: 'VAN-2015', meta: 'Passed — Tech: Derek Hayes (AMR)' },
-          { label: 'VAN-3021', meta: 'Passed — Tech: Jamal Foster (AMR)' },
-          { label: 'VAN-5012', meta: 'Flagged — Tech: Miguel Torres (AMR)' },
-        ],
-      },
-      {
-        heading: 'Not Inspected (7)',
-        color: 'red',
-        items: [
-          { label: 'VAN-1099', meta: 'Missed — no DA assigned' },
-          { label: 'VAN-2044', meta: 'DA did not check in' },
-          { label: 'VAN-3077', meta: 'Awaiting driver pickup' },
-          { label: 'VAN-4005', meta: 'Missed — rushed rollout' },
-          { label: 'VAN-4021', meta: 'No inspection logged' },
-          { label: 'VAN-5018', meta: 'DA absent' },
-          { label: 'VAN-5041', meta: 'Unassigned' },
-        ],
-      },
-      {
-        heading: 'Approve New (2)',
-        color: 'blue',
-        items: [
-          { label: 'VAN-6001', meta: 'Newly activated — needs baseline DVIC' },
-          { label: 'VAN-6002', meta: 'Newly activated — needs baseline DVIC' },
-        ],
-      },
+    // category → maps the inspecting vendor's specialty (AMR = Mechanical, Body = body work, etc.)
+    // severity → clean | low | medium | high | defective
+    inspectedVans: [
+      { id: 'VAN-1042', vendor: 'ProFleet Auto Care',       tech: 'Carlos Mendez',  category: 'amr',       severity: 'high',      result: 'Flagged' },
+      { id: 'VAN-1018', vendor: 'ProFleet Auto Care',       tech: "Brian O'Connor", category: 'amr',       severity: 'clean',     result: 'Passed' },
+      { id: 'VAN-2009', vendor: 'Evergreen Body Works',     tech: 'Luis Ramirez',   category: 'body',      severity: 'low',       result: 'Passed' },
+      { id: 'VAN-2015', vendor: 'ProFleet Auto Care',       tech: 'Derek Hayes',    category: 'amr',       severity: 'clean',     result: 'Passed' },
+      { id: 'VAN-3021', vendor: 'ProFleet Auto Care',       tech: 'Jamal Foster',   category: 'amr',       severity: 'medium',    result: 'Passed' },
+      { id: 'VAN-3044', vendor: 'Evergreen Body Works',     tech: 'Marie Dubois',   category: 'body',      severity: 'low',       result: 'Passed' },
+      { id: 'VAN-4005', vendor: 'Discount Tire Commercial', tech: 'Alex Rivera',    category: 'tires',     severity: 'high',      result: 'Flagged' },
+      { id: 'VAN-4018', vendor: 'ProFleet Auto Care',       tech: 'Ivan Petrov',    category: 'amr',       severity: 'clean',     result: 'Passed' },
+      { id: 'VAN-5008', vendor: 'Spotless Mobile Detail',   tech: 'Jasmine Rhodes', category: 'detailing', severity: 'clean',     result: 'Passed' },
+      { id: 'VAN-5012', vendor: 'ProFleet Auto Care',       tech: 'Miguel Torres',  category: 'amr',       severity: 'defective', result: 'Flagged' },
+      { id: 'VAN-3077', vendor: 'Discount Tire Commercial', tech: 'Priya Shah',     category: 'tires',     severity: 'medium',    result: 'Passed' },
+      { id: 'VAN-2022', vendor: 'Spotless Mobile Detail',   tech: 'Nate Kim',       category: 'detailing', severity: 'clean',     result: 'Passed' },
+    ],
+    notInspectedVans: [
+      { id: 'VAN-1099', reason: 'Missed — no DA assigned' },
+      { id: 'VAN-2044', reason: 'DA did not check in' },
+      { id: 'VAN-3077', reason: 'Awaiting driver pickup' },
+      { id: 'VAN-4005', reason: 'Missed — rushed rollout' },
+      { id: 'VAN-4021', reason: 'No inspection logged' },
+      { id: 'VAN-5018', reason: 'DA absent' },
+      { id: 'VAN-5041', reason: 'Unassigned' },
+    ],
+    approveNewVans: [
+      { id: 'VAN-6001', reason: 'Newly activated — needs baseline DVIC' },
+      { id: 'VAN-6002', reason: 'Newly activated — needs baseline DVIC' },
     ],
   },
   scheduled: {
@@ -215,6 +209,172 @@ function ScheduledRepairItem({ item }) {
   );
 }
 
+// ============ Inspected Detail — enhanced renderer for the 'inspected' card ============
+const INSPECTED_SEVERITY_LEGEND = [
+  { id: 'clean',     label: 'Clean',     color: 'text-accent-green',  dot: 'bg-accent-green' },
+  { id: 'low',       label: 'Low',       color: 'text-accent-blue',   dot: 'bg-accent-blue' },
+  { id: 'medium',    label: 'Medium',    color: 'text-accent-gold',   dot: 'bg-accent-gold' },
+  { id: 'high',      label: 'High',      color: 'text-accent-orange', dot: 'bg-accent-orange' },
+  { id: 'defective', label: 'Defective', color: 'text-accent-red',    dot: 'bg-accent-red' },
+];
+
+const INSPECTOR_CATEGORIES = [
+  { id: 'amr',       label: 'AMR',          description: 'Amazon Mechanical Repairs' },
+  { id: 'body',      label: 'Body Defects', description: 'Body & paint work' },
+  { id: 'tires',     label: 'Tires',        description: 'Tire service' },
+  { id: 'detailing', label: 'Detailing',    description: 'Cleaning / interior detail' },
+];
+
+function InspectedDetailRenderer({ data }) {
+  const inspected = data.inspectedVans || [];
+  const notInspected = data.notInspectedVans || [];
+  const approveNew = data.approveNewVans || [];
+
+  // Filters
+  const [activeCategories, setActiveCategories] = useState([]); // empty = all
+  const toggleCategory = (id) => setActiveCategories(
+    activeCategories.includes(id)
+      ? activeCategories.filter((c) => c !== id)
+      : [...activeCategories, id]
+  );
+
+  // Derived counts
+  const now = new Date();
+  const timeStr = now.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+  const total = inspected.length;
+  const withIssues = inspected.filter((v) => v.severity !== 'clean').length;
+  const critical = inspected.filter((v) => v.severity === 'defective' || v.severity === 'high').length;
+  const grounded = 1;
+  const keysRecorded = total - grounded;
+
+  const filteredInspected = activeCategories.length
+    ? inspected.filter((v) => activeCategories.includes(v.category))
+    : inspected;
+
+  return (
+    <div className="space-y-4">
+      {/* Stats band */}
+      <div className="rounded-xl border border-navy-700/40 bg-navy-800/30 p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <KeyRound size={14} className="text-accent-blue" />
+          <span className="text-sm font-semibold text-white"><span className="text-accent-blue">{keysRecorded}</span> keys recorded</span>
+          <span className="text-[11px] text-navy-400">&middot; {timeStr}</span>
+        </div>
+        <div className="text-[11px] text-navy-300">
+          <span className="text-white font-semibold">{total}</span> vehicles &middot;{' '}
+          <span className="text-accent-orange font-semibold">{withIssues}</span> with issues &middot;{' '}
+          <span className="text-accent-red font-semibold">{critical}</span> critical &middot;{' '}
+          <span className="text-accent-red font-semibold">{grounded}</span> grounded
+        </div>
+      </div>
+
+      {/* Severity legend */}
+      <div className="flex items-center gap-3 flex-wrap text-[11px]">
+        <span className="text-navy-500 uppercase tracking-wide font-semibold">Severity:</span>
+        {INSPECTED_SEVERITY_LEGEND.map((s) => (
+          <div key={s.id} className="flex items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
+            <span className={s.color}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Category filter checkboxes */}
+      <div>
+        <div className="text-[10px] text-navy-400 uppercase tracking-wide font-semibold mb-2 flex items-center gap-1.5">
+          <Info size={10} /> Filter by inspecting vendor
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {INSPECTOR_CATEGORIES.map((c) => {
+            const active = activeCategories.includes(c.id);
+            const count = inspected.filter((v) => v.category === c.id).length;
+            return (
+              <label key={c.id} title={c.description}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${
+                  active
+                    ? 'border-accent-blue/50 bg-accent-blue/10 text-white'
+                    : 'border-navy-700 bg-navy-800/40 text-navy-300 hover:border-navy-600 hover:text-white'
+                }`}>
+                <input type="checkbox" checked={active} onChange={() => toggleCategory(c.id)} className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">{c.label}</span>
+                <span className="text-[10px] text-navy-400">({count})</span>
+              </label>
+            );
+          })}
+          {activeCategories.length > 0 && (
+            <button onClick={() => setActiveCategories([])}
+              className="text-[11px] text-accent-red hover:underline">Clear</button>
+          )}
+        </div>
+      </div>
+
+      {/* Inspected list */}
+      <div>
+        <h4 className="text-xs font-semibold text-accent-green mb-2 uppercase tracking-wide">
+          Inspected ({filteredInspected.length}{activeCategories.length > 0 ? ` of ${inspected.length}` : ''})
+        </h4>
+        <div className="space-y-1.5">
+          {filteredInspected.map((v) => {
+            const sev = INSPECTED_SEVERITY_LEGEND.find((s) => s.id === v.severity);
+            const cat = INSPECTOR_CATEGORIES.find((c) => c.id === v.category);
+            return (
+              <div key={v.id} className="flex items-center justify-between gap-3 bg-navy-800/40 border border-navy-700/40 rounded-lg px-3 py-2.5">
+                <div className="flex items-center gap-2 min-w-0 shrink-0">
+                  <div className={`w-2.5 h-2.5 rounded-full ${sev?.dot || 'bg-navy-600'}`} />
+                  <span className="text-sm font-semibold text-white font-mono">{v.id}</span>
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <div className="text-xs text-navy-200 truncate">
+                    <span className={v.result === 'Flagged' ? 'text-accent-orange font-semibold' : 'text-accent-green'}>{v.result}</span>
+                    {' '}&mdash; Tech: <span className="text-white">{v.tech}</span>
+                  </div>
+                  <div className="text-[11px] text-navy-400 truncate">
+                    Vendor: <span className="text-white font-medium">{v.vendor}</span>
+                    {cat && <> <span className="text-navy-500">·</span> <Badge variant="blue">{cat.label}</Badge></>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {filteredInspected.length === 0 && (
+            <div className="text-center py-6 text-xs text-navy-400">No inspections match the selected filters.</div>
+          )}
+        </div>
+      </div>
+
+      {/* Not inspected list */}
+      {notInspected.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-accent-red mb-2 uppercase tracking-wide">Not Inspected ({notInspected.length})</h4>
+          <div className="space-y-1.5">
+            {notInspected.map((v) => (
+              <div key={v.id} className="flex items-center justify-between gap-3 bg-accent-red/5 border border-accent-red/20 rounded-lg px-3 py-2">
+                <span className="text-sm text-white font-medium font-mono">{v.id}</span>
+                <span className="text-[11px] text-navy-300">{v.reason}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Approve new list */}
+      {approveNew.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-accent-blue mb-2 uppercase tracking-wide">Approve New ({approveNew.length})</h4>
+          <div className="space-y-1.5">
+            {approveNew.map((v) => (
+              <div key={v.id} className="flex items-center justify-between gap-3 bg-accent-blue/5 border border-accent-blue/20 rounded-lg px-3 py-2">
+                <span className="text-sm text-white font-medium font-mono">{v.id}</span>
+                <span className="text-[11px] text-navy-300">{v.reason}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CardDetailModal({ cardKey, onClose }) {
   if (!cardKey) return null;
   const data = cardDetails[cardKey];
@@ -247,7 +407,9 @@ function CardDetailModal({ cardKey, onClose }) {
         </div>
 
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
-          {data.scheduledItems ? (
+          {cardKey === 'inspected' ? (
+            <InspectedDetailRenderer data={data} />
+          ) : data.scheduledItems ? (
             <div className="space-y-3">
               {data.scheduledItems.map((it) => (
                 <ScheduledRepairItem key={it.fleetId} item={it} />

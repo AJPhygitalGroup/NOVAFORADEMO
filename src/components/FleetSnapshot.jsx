@@ -20,6 +20,8 @@ const SEVERITY_CONFIG = {
 
 const DEFECT_STATUS_CONFIG = {
   pending:        { label: 'Pending',         variant: 'gold' },
+  approved:       { label: 'Approved',        variant: 'green' },
+  canceled:       { label: 'Canceled',        variant: 'gray' },
   acknowledged:   { label: 'Acknowledged',    variant: 'blue' },
   sent_to_vendor: { label: 'Sent to Vendor',  variant: 'purple' },
   completed:      { label: 'Completed',       variant: 'green' },
@@ -240,6 +242,7 @@ function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreateWO }) 
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showGround, setShowGround] = useState(false);
   const [defectActions, setDefectActions] = useState({});
+  const [autoApproveSimilar, setAutoApproveSimilar] = useState({});
   const defects = fleetSnapshotDefectDetails[van.id] || [];
 
   // Mock photos — labeled
@@ -262,6 +265,32 @@ function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreateWO }) 
 
   const handleAction = (defectId, action) => {
     setDefectActions({ ...defectActions, [defectId]: action });
+  };
+
+  // Approve a single defect. If autoApproveSimilar is checked for it, also
+  // approve any other pending defect with the same part so the DSP clears
+  // many small, routine items in one click.
+  const handleApprove = (defect) => {
+    const next = { ...defectActions, [defect.id]: 'approved' };
+    if (autoApproveSimilar[defect.id]) {
+      defects.forEach((d) => {
+        const cur = defectActions[d.id] || d.status;
+        if (d.id !== defect.id && cur === 'pending' && d.part === defect.part) {
+          next[d.id] = 'approved';
+        }
+      });
+    }
+    setDefectActions(next);
+    // After approving, open the Create WO modal pre-filled with this defect
+    onCreateWO?.(van, defect);
+  };
+
+  const handleCancel = (defect) => {
+    setDefectActions({ ...defectActions, [defect.id]: 'canceled' });
+  };
+
+  const toggleAutoApprove = (defectId) => {
+    setAutoApproveSimilar({ ...autoApproveSimilar, [defectId]: !autoApproveSimilar[defectId] });
   };
 
   const confirmGround = (reason) => {
@@ -394,24 +423,31 @@ function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreateWO }) 
                                 {statusConf && <Badge variant={statusConf.variant} size="md">{statusConf.label}</Badge>}
                               </div>
                               {canTakeActions && currentStatus === 'pending' && (
-                                <div className="flex items-center gap-1.5 pt-2 border-t border-navy-700/40">
-                                  <button
-                                    onClick={() => handleAction(d.id, 'acknowledged')}
-                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-accent-blue/15 border border-accent-blue/40 text-accent-blue text-[11px] font-semibold hover:bg-accent-blue/25 cursor-pointer"
-                                    title="Acknowledge — see but don't action"
-                                  >
-                                    <Eye size={11} /> Acknowledge
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      handleAction(d.id, 'sent_to_vendor');
-                                      onCreateWO?.(van, d);
-                                    }}
-                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-accent-purple/15 border border-accent-purple/40 text-accent-purple text-[11px] font-semibold hover:bg-accent-purple/25 cursor-pointer"
-                                    title="Send job to a vendor"
-                                  >
-                                    <Send size={11} /> Send to Vendor
-                                  </button>
+                                <div className="pt-2 border-t border-navy-700/40 space-y-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => handleCancel(d)}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-accent-red/10 border border-accent-red/40 text-accent-red text-[11px] font-semibold hover:bg-accent-red/20 cursor-pointer"
+                                      title="Dismiss this defect"
+                                    >
+                                      <X size={11} /> Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => handleApprove(d)}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-accent-green text-white text-[11px] font-semibold hover:opacity-90 cursor-pointer shadow-lg shadow-accent-green/20"
+                                      title="Approve and create a work order"
+                                    >
+                                      <Check size={11} /> Approve
+                                    </button>
+                                  </div>
+                                  <label className="flex items-center gap-1.5 text-[11px] text-navy-400 cursor-pointer select-none">
+                                    <input type="checkbox"
+                                      checked={!!autoApproveSimilar[d.id]}
+                                      onChange={() => toggleAutoApprove(d.id)}
+                                      className="w-3.5 h-3.5 cursor-pointer" />
+                                    Auto-approve similar defects
+                                    <span className="text-navy-500">({d.part})</span>
+                                  </label>
                                 </div>
                               )}
                             </div>
