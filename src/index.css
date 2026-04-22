@@ -68,6 +68,38 @@ html.light .bg-black\/60 {
   background-color: rgba(15, 23, 42, 0.35) !important;
 }
 
+/* ============================================================
+   Calm mode — muted/pastel accents by default, vivid on hover
+   ============================================================
+   Applies a desaturated version of every accent color so the initial
+   impression is softer. Any hover on an interactive element restores the
+   full-saturation values via CSS custom-property inheritance. */
+html.calm {
+  --color-accent-orange: #d4a574;
+  --color-accent-green:  #9ec2a7;
+  --color-accent-red:    #d49999;
+  --color-accent-blue:   #a2b5d4;
+  --color-accent-purple: #b4a9c9;
+  --color-accent-gold:   #c9ae85;
+  /* Ease the transition so the color comes alive gradually */
+}
+
+html.calm * {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+/* When an interactive element is hovered, re-inherit the vivid accent
+   palette to all of its descendants via CSS variable cascade. */
+html.calm :is(button, a, label, [role="button"], .hover-vivid):hover,
+html.calm :is(button, a, label, [role="button"], .hover-vivid):focus-visible {
+  --color-accent-orange: #ff9900;
+  --color-accent-green:  #22c55e;
+  --color-accent-red:    #ef4444;
+  --color-accent-blue:   #3b82f6;
+  --color-accent-purple: #8b5cf6;
+  --color-accent-gold:   #f59e0b;
+}
+
 #root {
   min-height: 100vh;
   min-height: 100dvh; /* iOS Safari — use dynamic viewport */
