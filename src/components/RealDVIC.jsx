@@ -214,13 +214,21 @@ function ScheduledRepairItem({ item }) {
 }
 
 // ============ Inspected Detail — enhanced renderer for the 'inspected' card ============
+// Status is binary from the DSP's perspective: Clean or Defective. Granular
+// severity levels still drive row tint but the legend stays minimal.
 const INSPECTED_SEVERITY_LEGEND = [
-  { id: 'clean',     label: 'Clean',     color: 'text-accent-green',  dot: 'bg-accent-green' },
-  { id: 'low',       label: 'Low',       color: 'text-accent-blue',   dot: 'bg-accent-blue' },
-  { id: 'medium',    label: 'Medium',    color: 'text-accent-gold',   dot: 'bg-accent-gold' },
-  { id: 'high',      label: 'High',      color: 'text-accent-orange', dot: 'bg-accent-orange' },
-  { id: 'defective', label: 'Defective', color: 'text-accent-red',    dot: 'bg-accent-red' },
+  { id: 'clean',     label: 'Clean',     color: 'text-accent-green', dot: 'bg-accent-green' },
+  { id: 'defective', label: 'Defective', color: 'text-accent-red',   dot: 'bg-accent-red' },
 ];
+
+// Map the 5-level severity into the 2-state dot for row indicators
+const SEVERITY_TO_STATE = {
+  clean: 'clean',
+  low: 'clean',
+  medium: 'defective',
+  high: 'defective',
+  defective: 'defective',
+};
 
 const INSPECTOR_CATEGORIES = [
   { id: 'amr',       label: 'AMR',          description: 'Amazon Mechanical Repairs' },
@@ -350,7 +358,9 @@ function InspectedDetailRenderer({ data, onOpenVehicleReport }) {
         </h4>
         <div className="space-y-1.5">
           {filteredInspected.map((v) => {
-            const sev = INSPECTED_SEVERITY_LEGEND.find((s) => s.id === v.severity);
+            // Collapse granular severity into the 2-state (clean/defective) model used by the legend
+            const stateId = SEVERITY_TO_STATE[v.severity] || 'clean';
+            const sev = INSPECTED_SEVERITY_LEGEND.find((s) => s.id === stateId);
             const cat = INSPECTOR_CATEGORIES.find((c) => c.id === v.category);
             const style = ROW_SEVERITY_STYLES[v.severity] || ROW_SEVERITY_STYLES.clean;
             const flagged = v.result === 'Flagged' || v.severity === 'defective';
