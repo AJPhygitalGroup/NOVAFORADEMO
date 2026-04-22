@@ -192,55 +192,14 @@ export function FlexFleetModal({ onClose }) {
   );
 }
 
-// ---------- Ground Vehicle Modal ----------
-function GroundVehicleModal({ van, onConfirm, onClose }) {
-  const [reason, setReason] = useState('');
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-        className="bg-navy-900 border border-navy-700 rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-navy-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-accent-red/15 border border-accent-red/40 flex items-center justify-center">
-              <Lock size={16} className="text-accent-red" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-white">Ground Vehicle</h3>
-              <p className="text-[11px] text-navy-400">{van.id} will be unavailable for routing</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-navy-400 hover:text-white p-2 -mr-2"><X size={20} /></button>
-        </div>
-        <div className="px-4 sm:px-6 py-5 space-y-3">
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-accent-red/10 border border-accent-red/30 text-xs text-navy-200">
-            <AlertTriangle size={14} className="text-accent-red mt-0.5 shrink-0" />
-            <div>Grounding this vehicle immediately excludes it from today's routing. Amazon Logistics will be notified.</div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Reason (required)</label>
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
-              placeholder="e.g. Brake system failure — unsafe to operate"
-              className="w-full rounded-lg px-3 py-2.5 text-base bg-navy-800 border border-navy-700 text-white placeholder-navy-500 outline-none focus:border-accent-red resize-none" />
-          </div>
-        </div>
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
-          <button onClick={onClose} className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">Cancel</button>
-          <button onClick={() => onConfirm(reason)} disabled={reason.length < 4}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-accent-red text-white hover:opacity-90 disabled:opacity-40 cursor-pointer">
-            <Lock size={14} /> Ground Vehicle
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
+// Ground Vehicle Modal was removed — Ground action is no longer available
+// from the Vehicle Report Card (Create Work Order is the single primary
+// action there). The underlying `grounded` flag is still surfaced via the
+// grounded banner and legend.
 
 // ---------- Vehicle Report Card (drawer/bottom sheet) ----------
 export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreateWO }) {
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [showGround, setShowGround] = useState(false);
   const [defectActions, setDefectActions] = useState({});
   const [autoApproveSimilar, setAutoApproveSimilar] = useState({});
   const defects = fleetSnapshotDefectDetails[van.id] || [];
@@ -291,12 +250,6 @@ export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreat
 
   const toggleAutoApprove = (defectId) => {
     setAutoApproveSimilar({ ...autoApproveSimilar, [defectId]: !autoApproveSimilar[defectId] });
-  };
-
-  const confirmGround = (reason) => {
-    onUpdateVan(van.id, { grounded: true, groundedReason: reason });
-    setShowGround(false);
-    onClose();
   };
 
   const handleUnground = () => {
@@ -467,16 +420,9 @@ export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreat
             )}
           </div>
 
-          {/* Footer actions */}
+          {/* Footer — Create Work Order is the single primary action */}
           {canTakeActions && !van.grounded && (
             <div className="flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
-              <button
-                onClick={() => setShowGround(true)}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-accent-red/15 border border-accent-red/50 text-accent-red text-sm font-semibold hover:bg-accent-red/25 cursor-pointer shrink-0"
-                title="Ground vehicle"
-              >
-                <Lock size={14} /> <span className="hidden sm:inline">Ground</span>
-              </button>
               <button
                 onClick={() => onCreateWO?.(van, null)}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-accent-blue to-accent-purple text-white text-sm font-semibold hover:opacity-90 cursor-pointer"
@@ -492,10 +438,6 @@ export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreat
           )}
         </motion.div>
       </motion.div>
-
-      <AnimatePresence>
-        {showGround && <GroundVehicleModal van={van} onClose={() => setShowGround(false)} onConfirm={confirmGround} />}
-      </AnimatePresence>
     </>
   );
 }
