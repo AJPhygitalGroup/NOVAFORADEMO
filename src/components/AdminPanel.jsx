@@ -7,7 +7,7 @@ import {
   Clock, Calendar, RefreshCw, QrCode, Eye, EyeOff, Copy, Package, Sparkles,
   Armchair, Paintbrush, Car, Zap, Circle, Search, Lightbulb, Droplet, Wind,
   LifeBuoy, Gauge, MonitorSmartphone, ThermometerSun, HelpCircle, Zap as ZapIcon,
-  Ban, CheckCheck
+  Ban, CheckCheck, ExternalLink, UserCircle
 } from 'lucide-react';
 import { orgUsers, AVAILABLE_ROLES, rolesAssignableBy, preventiveMaintenanceJobs, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS } from '../data/mockData';
 import Badge from './ui/Badge';
@@ -577,6 +577,48 @@ function Setup2FAModal({ onClose, onEnable }) {
   );
 }
 
+// Account Manager contact card shown on the Organization tab — gives the
+// customer a direct line to their Nova Fora rep (Ask a question / Schedule time).
+function AccountManagerCard() {
+  const am = {
+    name: 'Jorge Escalona',
+    title: 'Account Manager',
+    email: 'jorge@novafora.com',
+    schedulingUrl: 'https://cal.com/nova-fora/jorge',
+  };
+  return (
+    <div className="lg:col-span-1 bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center font-bold text-white shrink-0">
+          {am.name.split(' ').map((p) => p[0]).join('')}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-base font-semibold text-white truncate">{am.name}</div>
+          <div className="text-[11px] text-navy-400">{am.title}</div>
+        </div>
+      </div>
+      <div className="pt-3 border-t border-navy-800 space-y-3">
+        <a href={`mailto:${am.email}?subject=Question%20from%20a%20Nova%20Fora%20customer`}
+          className="flex items-center justify-between gap-2 text-sm text-white hover:text-accent-blue group">
+          <span className="flex items-center gap-2">
+            <MessageSquare size={14} className="text-accent-blue" />
+            <span className="underline decoration-navy-600 underline-offset-4 group-hover:decoration-accent-blue">Ask a question</span>
+          </span>
+          <ExternalLink size={12} className="text-navy-500 group-hover:text-accent-blue" />
+        </a>
+        <a href={am.schedulingUrl} target="_blank" rel="noreferrer"
+          className="flex items-center justify-between gap-2 text-sm text-white hover:text-accent-blue group">
+          <span className="flex items-center gap-2">
+            <Calendar size={14} className="text-accent-blue" />
+            <span className="underline decoration-navy-600 underline-offset-4 group-hover:decoration-accent-blue">Schedule time with me!</span>
+          </span>
+          <ExternalLink size={12} className="text-navy-500 group-hover:text-accent-blue" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================
 // Tab: Organization
 // ============================================================
@@ -590,30 +632,40 @@ function OrganizationTab({ user }) {
     address: isDsp ? '13420 NE 20th St, Bellevue WA 98005' : '2200 Alaskan Way, Seattle WA 98121',
     lotLocation: 'Back lot, Gate B · 4827',
     inspectionImpossibleSMS: true,
-    defaultPmVendor: 'Dulles Midas',
-    secondaryPmVendor: 'ProFleet Auto Care',
-    pmMileageTrigger: 500,
-    pmFrequency: 'weekly_monday',
+    eveningReminder: true,
+    eveningReminderTime: '19:00',
+    keyReturnInfo: true,
+    keyReturnText: 'Front office lockbox, code 4827. Drop keys in the blue bin after hours.',
+    preferredVendors: true,
+    preferredVendorSelections: { AMR: 'ProFleet Auto Care', Body: 'Evergreen Body Works', Detailing: 'Spotless Mobile Detail', 'Flex Fleet': 'Flex Fleet West' },
+    slackIntegration: false,
+    slackChannel: '#fleet-ops',
     servicesOffered: isVendor ? ['mechanical', 'electrical', 'body', 'windshield', 'pm'] : [],
   });
 
   const toggleService = (s) => setForm({ ...form, servicesOffered: form.servicesOffered.includes(s) ? form.servicesOffered.filter((x) => x !== s) : [...form.servicesOffered, s] });
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      {/* Business details */}
-      <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-accent-blue/15 flex items-center justify-center"><Building2 size={18} className="text-accent-blue" /></div>
-          <div><h3 className="text-base font-semibold text-white">Business details</h3><p className="text-[11px] text-navy-400">Shown to partners and on invoices</p></div>
+    <div className="space-y-4">
+      {/* Top row: Business details (2/3) + Account Manager card (1/3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Business details */}
+        <div className="lg:col-span-2 bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-accent-blue/15 flex items-center justify-center"><Building2 size={18} className="text-accent-blue" /></div>
+            <div><h3 className="text-base font-semibold text-white">Business details</h3><p className="text-[11px] text-navy-400">Shown to partners and on invoices</p></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Organization name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
+            <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Business phone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
+            <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">SMS phone</label><input value={form.smsPhone} onChange={(e) => setForm({ ...form, smsPhone: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
+            <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Default lot location</label><input value={form.lotLocation} onChange={(e) => setForm({ ...form, lotLocation: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
+            <div className="sm:col-span-2"><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Business address</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Organization name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
-          <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Business phone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
-          <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">SMS phone</label><input value={form.smsPhone} onChange={(e) => setForm({ ...form, smsPhone: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
-          <div><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Default lot location</label><input value={form.lotLocation} onChange={(e) => setForm({ ...form, lotLocation: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
-          <div className="sm:col-span-2"><label className="text-xs font-semibold text-navy-300 mb-1.5 block">Business address</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" /></div>
-        </div>
+
+        {/* Account Manager card */}
+        <AccountManagerCard />
       </div>
 
       {/* SMS opt-in */}
@@ -623,6 +675,107 @@ function OrganizationTab({ user }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1"><MessageSquare size={14} className="text-accent-blue" /><span className="text-sm font-semibold text-white">Inspection Impossible SMS</span></div>
             <div className="text-[11px] text-navy-400">Notify via SMS when an inspector cannot complete an inspection (keys missing, vehicle not found, etc.)</div>
+          </div>
+        </label>
+      </div>
+
+      {/* Evening reminder text */}
+      <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={form.eveningReminder} onChange={() => setForm({ ...form, eveningReminder: !form.eveningReminder })} className="mt-1 w-5 h-5" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <Clock size={14} className="text-accent-blue" />
+              <span className="text-sm font-semibold text-white">Set evening reminder text for keys and/or scheduled repairs</span>
+            </div>
+            <div className="text-[11px] text-accent-orange font-semibold">Vendors will not dispatch without confirmation of readiness</div>
+            <AnimatePresence initial={false}>
+              {form.eveningReminder && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden mt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-navy-400">Send at</span>
+                    <input type="time" value={form.eveningReminderTime} onChange={(e) => setForm({ ...form, eveningReminderTime: e.target.value })}
+                      className="rounded-lg px-3 py-1.5 text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-blue" />
+                    <span className="text-[11px] text-navy-400">to the DSP SMS phone</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </label>
+      </div>
+
+      {/* Key return info */}
+      <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={form.keyReturnInfo} onChange={() => setForm({ ...form, keyReturnInfo: !form.keyReturnInfo })} className="mt-1 w-5 h-5" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1"><Key size={14} className="text-accent-gold" /><span className="text-sm font-semibold text-white">Key(s) return time, location, lockbox code, etc.</span></div>
+            <div className="text-[11px] text-navy-400">Shared with vendors so drivers know where to drop keys after overnight repairs</div>
+            <AnimatePresence initial={false}>
+              {form.keyReturnInfo && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden mt-3">
+                  <textarea value={form.keyReturnText} onChange={(e) => setForm({ ...form, keyReturnText: e.target.value })} rows={2}
+                    placeholder="e.g. Front office lockbox, code 4827. Drop keys in the blue bin after hours."
+                    className="w-full rounded-lg px-3 py-2 text-sm bg-navy-800 border border-navy-700 text-white placeholder-navy-500 outline-none focus:border-accent-gold resize-none" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </label>
+      </div>
+
+      {/* Preferred Vendors */}
+      <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={form.preferredVendors} onChange={() => setForm({ ...form, preferredVendors: !form.preferredVendors })} className="mt-1 w-5 h-5" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1"><Building2 size={14} className="text-accent-purple" /><span className="text-sm font-semibold text-white">Preferred Vendors (AMR, Body, Detailing, and Flex Fleet)</span></div>
+            <div className="text-[11px] text-navy-400">Auto-route work orders to your preferred vendor for each category</div>
+            <AnimatePresence initial={false}>
+              {form.preferredVendors && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden mt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {['AMR', 'Body', 'Detailing', 'Flex Fleet'].map((cat) => (
+                      <div key={cat}>
+                        <label className="text-[10px] font-semibold text-navy-300 mb-1 block uppercase tracking-wide">{cat}</label>
+                        <input value={form.preferredVendorSelections[cat] || ''} onChange={(e) => setForm({ ...form, preferredVendorSelections: { ...form.preferredVendorSelections, [cat]: e.target.value } })}
+                          className="w-full rounded-lg px-3 py-2 text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-purple" />
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </label>
+      </div>
+
+      {/* Slack Integration */}
+      <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={form.slackIntegration} onChange={() => setForm({ ...form, slackIntegration: !form.slackIntegration })} className="mt-1 w-5 h-5" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1"><MessageSquare size={14} className="text-accent-green" /><span className="text-sm font-semibold text-white">Slack Integration</span></div>
+            <div className="text-[11px] text-navy-400">Mirror critical alerts (Rush Orders, Grounded Vehicles, Completions) into a Slack channel</div>
+            <AnimatePresence initial={false}>
+              {form.slackIntegration && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden mt-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] text-navy-400 shrink-0">Channel</label>
+                    <input value={form.slackChannel} onChange={(e) => setForm({ ...form, slackChannel: e.target.value })} placeholder="#fleet-ops"
+                      className="flex-1 rounded-lg px-3 py-1.5 text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green font-mono" />
+                  </div>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-accent-green/15 border border-accent-green/40 text-accent-green text-xs font-semibold hover:bg-accent-green/25 cursor-pointer">
+                    <Check size={12} /> Connect Slack workspace
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </label>
       </div>
@@ -655,52 +808,6 @@ function OrganizationTab({ user }) {
           </div>
         </div>
       )}
-
-      {/* Preventive Maintenance settings */}
-      <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl p-4 sm:p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-accent-green/15 flex items-center justify-center"><RefreshCw size={18} className="text-accent-green" /></div>
-          <div><h3 className="text-base font-semibold text-white">Preventive Maintenance automation</h3><p className="text-[11px] text-navy-400">Auto-trigger PM work when mileage/time thresholds are hit</p></div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Default PM vendor</label>
-            <select value={form.defaultPmVendor} onChange={(e) => setForm({ ...form, defaultPmVendor: e.target.value })}
-              className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green cursor-pointer">
-              <option>Dulles Midas</option>
-              <option>ProFleet Auto Care</option>
-              <option>Discount Tire Commercial</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Secondary PM vendor (backup)</label>
-            <select value={form.secondaryPmVendor} onChange={(e) => setForm({ ...form, secondaryPmVendor: e.target.value })}
-              className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green cursor-pointer">
-              <option>ProFleet Auto Care</option>
-              <option>Dulles Midas</option>
-              <option>Discount Tire Commercial</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">PM mileage trigger</label>
-            <select value={form.pmMileageTrigger} onChange={(e) => setForm({ ...form, pmMileageTrigger: parseInt(e.target.value) })}
-              className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green cursor-pointer">
-              <option value="100">Alert 100 miles before</option>
-              <option value="500">Alert 500 miles before</option>
-              <option value="1000">Alert 1,000 miles before</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">PM report frequency</label>
-            <select value={form.pmFrequency} onChange={(e) => setForm({ ...form, pmFrequency: e.target.value })}
-              className="w-full rounded-lg px-3 py-3 sm:py-2.5 text-base sm:text-sm bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green cursor-pointer">
-              <option value="weekly_monday">Weekly (Monday)</option>
-              <option value="twice_weekly">Twice weekly (Mon + Thu)</option>
-              <option value="daily">Daily</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       <div className="flex justify-end">
         <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent-blue text-white text-sm font-semibold hover:opacity-90 cursor-pointer">
