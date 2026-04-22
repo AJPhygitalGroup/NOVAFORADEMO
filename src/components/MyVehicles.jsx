@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { fleetSnapshotVans } from '../data/mockData';
 import Badge from './ui/Badge';
+import VehicleDetailPage from './VehicleDetailPage';
 
 // ============================================================
 // Helpers
@@ -779,7 +780,7 @@ export default function MyVehicles({ user }) {
 
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [editVehicle, setEditVehicle] = useState(null);
+  const [detailVehicle, setDetailVehicle] = useState(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [classFilter, setClassFilter] = useState('all');
   const [dspFilter, setDspFilter] = useState('all');
@@ -918,6 +919,23 @@ export default function MyVehicles({ user }) {
   const cleanCount = fleet.filter((v) => v.defectCount === 0).length;
   const defectiveCount = fleet.filter((v) => v.defectCount > 0).length;
 
+  // When a vehicle is selected, render the full-page detail view instead of the grid
+  if (detailVehicle) {
+    return (
+      <VehicleDetailPage
+        vehicle={detailVehicle}
+        fleet={fleet}
+        user={user}
+        readOnly={isVendor}
+        onBack={() => setDetailVehicle(null)}
+        onSave={handleSaveVehicle}
+        onDelete={handleDeleteVehicle}
+        onNavigate={(next) => setDetailVehicle({ ...next })}
+        onLocationChange={handleLocationChange}
+      />
+    );
+  }
+
   const title = isVendor ? 'DSP Vehicles' : 'My Vehicles';
   const subtitle = isVendor
     ? 'Fleet directory across your assigned DSPs — copy any vehicle\'s details to your billing system'
@@ -1053,7 +1071,7 @@ export default function MyVehicles({ user }) {
               </div>
               <div className="overflow-x-auto">
                 <VehicleTable vans={group.vans} isVendor={isVendor} canEdit={canEdit}
-                  onRowClick={setEditVehicle} onCopy={handleCopy} copiedId={copiedId}
+                  onRowClick={setDetailVehicle} onCopy={handleCopy} copiedId={copiedId}
                   onLocationChange={handleLocationChange} />
               </div>
             </motion.div>
@@ -1068,7 +1086,7 @@ export default function MyVehicles({ user }) {
         <div className="hidden md:block bg-navy-900/60 border border-navy-700/40 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <VehicleTable vans={filtered} isVendor={isVendor} canEdit={canEdit}
-              onRowClick={setEditVehicle} onCopy={handleCopy} copiedId={copiedId}
+              onRowClick={setDetailVehicle} onCopy={handleCopy} copiedId={copiedId}
               onLocationChange={handleLocationChange} />
           </div>
           {filtered.length === 0 && (
@@ -1091,7 +1109,7 @@ export default function MyVehicles({ user }) {
                 <button onClick={() => setDspFilter(group.dspId)} className="text-[10px] text-accent-blue">Filter</button>
               </div>
               {group.vans.map((v) => (
-                <VehicleCardMobile key={v.fleetId} v={v} onClick={() => setEditVehicle(v)}
+                <VehicleCardMobile key={v.fleetId} v={v} onClick={() => setDetailVehicle(v)}
                   onCopy={handleCopy} copiedId={copiedId} isVendor={isVendor} showDsp={false}
                   onLocationChange={handleLocationChange} />
               ))}
@@ -1099,7 +1117,7 @@ export default function MyVehicles({ user }) {
           ))
         ) : (
           filtered.map((v) => (
-            <VehicleCardMobile key={v.fleetId} v={v} onClick={() => setEditVehicle(v)}
+            <VehicleCardMobile key={v.fleetId} v={v} onClick={() => setDetailVehicle(v)}
               onCopy={handleCopy} copiedId={copiedId} isVendor={isVendor} showDsp={isVendor}
               onLocationChange={handleLocationChange} />
           ))
@@ -1112,13 +1130,12 @@ export default function MyVehicles({ user }) {
       </div>
 
       <AnimatePresence>
-        {(showAdd || editVehicle) && (
+        {showAdd && (
           <VehicleModal
-            vehicle={editVehicle}
+            vehicle={null}
             onSave={handleSaveVehicle}
-            onDelete={editVehicle && canEdit ? handleDeleteVehicle : null}
-            onClose={() => { setShowAdd(false); setEditVehicle(null); }}
-            readOnly={isVendor && !!editVehicle}
+            onDelete={null}
+            onClose={() => setShowAdd(false)}
           />
         )}
         {showBulkUpload && (
