@@ -261,6 +261,45 @@ export const preventiveMaintenanceJobs = [
   { id: 'PM-006', vehicleId: 'VAN-5012', dspId: 'DSP-4205', type: 'Alignment',         triggerType: 'calendar', triggerAt: '2026-04-26', currentValue: null, status: 'scheduled', dueAt: '2026-04-26', vendor: 'Dulles Midas' },
 ];
 
+// ============================================================
+// DVIC Defect Catalog — the list of items the inspector checks per vehicle
+// type. Amazon items are read-only; DSP / Vendor custom items can be added
+// but only DFS admins fill Group/Class/Line/Response Type.
+// ============================================================
+export const dvicDefectCatalog = {
+  cargo: [
+    { id: 'd-c1', source: 'Amazon', section: 'General',     part: 'Cleanliness',  defect: 'Interior has trash or excessive grime/dust present',       group: 'Detailing', class: '???',        line: '???',         responseType: 'Yes/No' },
+    { id: 'd-c2', source: 'DSP',    section: 'General',     part: 'Accessories',  defect: 'EZ Pass is missing or not attached to the windshield',     group: 'Customer',  class: 'Restricted', line: 'Convenience', responseType: 'Yes/No' },
+    { id: 'd-c3', source: 'Amazon', section: 'Front',       part: 'Lights',       defect: 'Headlight is not working',                                  group: 'AMR',       class: 'ULC',        line: 'Lights',      responseType: 'Yes/No' },
+    { id: 'd-c4', source: 'Vendor', section: 'Front',       part: 'Suspension',   defect: 'Coolant is low',                                            group: 'AMR',       class: 'ULC',        line: 'Fluids',      responseType: 'Yes/No' },
+    { id: 'd-c5', source: 'Amazon', section: 'Driver Side', part: 'Front tire',   defect: 'Tire has insufficient tread (less than 4/32")',            group: 'Tires',     class: 'Restricted', line: 'Data',        responseType: 'Numeric' },
+    { id: 'd-c6', source: 'Amazon', section: 'Back Side',   part: 'Brake lights', defect: 'Brake light is not working',                                group: 'AMR',       class: 'ULC',        line: 'Lights',      responseType: 'Yes/No' },
+    { id: 'd-c7', source: 'Amazon', section: 'In-Cab',      part: 'Dashboard',    defect: 'Warning light is illuminated',                              group: 'AMR',       class: 'ULC',        line: 'Dashboard',   responseType: 'Yes/No' },
+    { id: 'd-c8', source: 'DSP',    section: 'Passenger',   part: 'Sliding door', defect: 'Door track needs lubrication',                              group: 'Customer',  class: 'Restricted', line: 'Mechanical',  responseType: 'Yes/No' },
+  ],
+  dot: [
+    { id: 'd-d1', source: 'Amazon', section: 'Brakes',      part: 'Service brakes',  defect: 'Service brakes not functioning correctly',               group: 'AMR',   class: 'ULC',        line: 'Safety',      responseType: 'Yes/No' },
+    { id: 'd-d2', source: 'Amazon', section: 'Brakes',      part: 'Parking brake',   defect: 'Parking brake not holding vehicle on grade',             group: 'AMR',   class: 'ULC',        line: 'Safety',      responseType: 'Yes/No' },
+    { id: 'd-d3', source: 'Amazon', section: 'Steering',    part: 'Steering wheel',  defect: 'Excessive play in steering wheel (>2 in)',               group: 'AMR',   class: 'ULC',        line: 'Safety',      responseType: 'Numeric' },
+    { id: 'd-d4', source: 'Amazon', section: 'Exhaust',     part: 'Exhaust system',  defect: 'Exhaust leak detected',                                   group: 'AMR',   class: 'ULC',        line: 'Safety',      responseType: 'Yes/No' },
+    { id: 'd-d5', source: 'Amazon', section: 'Coupling',    part: 'Hitch',           defect: 'Coupling devices damaged or missing hardware',            group: 'AMR',   class: 'Restricted', line: 'Safety',      responseType: 'Yes/No' },
+    { id: 'd-d6', source: 'Amazon', section: 'Fuel',        part: 'Fuel tank',       defect: 'Fuel leak or tank damage',                                group: 'AMR',   class: 'ULC',        line: 'Safety',      responseType: 'Yes/No' },
+  ],
+  ev: [
+    { id: 'd-e1', source: 'Amazon', section: 'Battery',     part: 'High-voltage',    defect: 'Battery state of health below 80%',                       group: 'AMR',   class: 'EV',         line: 'Data',        responseType: 'Numeric' },
+    { id: 'd-e2', source: 'Amazon', section: 'Charging',    part: 'Charge port',     defect: 'Charge port damaged or not sealing',                      group: 'AMR',   class: 'EV',         line: 'Charging',    responseType: 'Yes/No' },
+    { id: 'd-e3', source: 'Amazon', section: 'Battery',     part: 'Coolant',         defect: 'Battery coolant loop warning',                            group: 'AMR',   class: 'EV',         line: 'Fluids',      responseType: 'Yes/No' },
+    { id: 'd-e4', source: 'DSP',    section: 'Charging',    part: 'Cable',           defect: 'Home-base charger cable damaged',                         group: 'Customer', class: 'Restricted', line: 'Equipment',  responseType: 'Yes/No' },
+    { id: 'd-e5', source: 'Amazon', section: 'Regen',       part: 'Regen brakes',    defect: 'Regenerative braking warning illuminated',                group: 'AMR',   class: 'EV',         line: 'Dashboard',   responseType: 'Yes/No' },
+  ],
+};
+
+export const DVIC_TEMPLATES = [
+  { id: 'cargo', label: 'DVIC (Cargo)', description: 'Standard cargo van inspection items' },
+  { id: 'dot',   label: 'DVIC (DOT)',   description: 'DOT-mandated commercial vehicle items' },
+  { id: 'ev',    label: 'DVIC (EV)',    description: 'Electric vehicle specific items' },
+];
+
 // Defect categories — each DSP configures which ones are auto-approved
 // instead of needing manual review before a WO is created
 // Available vendors that DSPs can send WOs to — includes services offered,

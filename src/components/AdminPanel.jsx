@@ -9,7 +9,7 @@ import {
   LifeBuoy, Gauge, MonitorSmartphone, ThermometerSun, HelpCircle, Zap as ZapIcon,
   Ban, CheckCheck, ExternalLink, UserCircle
 } from 'lucide-react';
-import { orgUsers, AVAILABLE_ROLES, rolesAssignableBy, preventiveMaintenanceJobs, pmIntervalsByVehicleType, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS } from '../data/mockData';
+import { orgUsers, AVAILABLE_ROLES, rolesAssignableBy, preventiveMaintenanceJobs, pmIntervalsByVehicleType, VENDOR_SERVICES, DEFECT_CATEGORIES, SEVERITY_THRESHOLDS, fleetSnapshotVans, VENDOR_ASSIGNABLE_DSPS, dvicDefectCatalog, DVIC_TEMPLATES } from '../data/mockData';
 import Badge from './ui/Badge';
 
 const DEFECT_CATEGORY_ICONS = {
@@ -1007,6 +1007,222 @@ function IntervalRow({ interval, editable, onChange }) {
 }
 
 // ============================================================
+// DVIC Defect Catalog — inspection items per vehicle template
+// (Amazon items read-only; DSP/Vendor custom items added by the customer
+// but Group/Class/Line/Response Type are filled by DFS admins)
+// ============================================================
+const SOURCE_VARIANT = {
+  Amazon: { bg: 'bg-accent-gold/15',   border: 'border-accent-gold/40',   text: 'text-accent-gold'   },
+  DSP:    { bg: 'bg-accent-blue/15',   border: 'border-accent-blue/40',   text: 'text-accent-blue'   },
+  Vendor: { bg: 'bg-accent-purple/15', border: 'border-accent-purple/40', text: 'text-accent-purple' },
+};
+
+function DvicDefectCatalog() {
+  const [activeTemplate, setActiveTemplate] = useState('cargo');
+  const [catalog, setCatalog] = useState(() => ({
+    cargo: [...dvicDefectCatalog.cargo],
+    dot: [...dvicDefectCatalog.dot],
+    ev: [...dvicDefectCatalog.ev],
+  }));
+  const [showAddDefect, setShowAddDefect] = useState(false);
+
+  const currentItems = catalog[activeTemplate] || [];
+  const addCustomDefect = (defect) => {
+    setCatalog({ ...catalog, [activeTemplate]: [{ ...defect, id: `d-custom-${Date.now()}`, source: 'DSP', group: 'Pending', class: 'Pending', line: 'Pending', responseType: 'Yes/No' }, ...currentItems] });
+  };
+
+  const amazonCount = currentItems.filter((i) => i.source === 'Amazon').length;
+  const customCount = currentItems.length - amazonCount;
+
+  return (
+    <div className="bg-navy-900/60 border border-navy-700/40 rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-navy-800 bg-navy-950/40">
+        <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <ClipboardCheck size={14} className="text-accent-blue" />
+              <h3 className="text-sm font-semibold text-white">Defect Catalog</h3>
+              <Badge variant="gold"><Lock size={9} className="inline mr-0.5" /> Amazon rules locked</Badge>
+            </div>
+            <p className="text-[11px] text-navy-400">Items the inspector checks for this vehicle template. Amazon rules cannot be modified; add your own custom items with <span className="text-white font-medium">+ Custom Defect</span>.</p>
+          </div>
+          <button onClick={() => setShowAddDefect(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent-green text-white text-xs font-semibold hover:opacity-90 cursor-pointer shrink-0">
+            <Plus size={12} /> Custom Defect
+          </button>
+        </div>
+
+        {/* Template sub-tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {DVIC_TEMPLATES.map((t) => {
+            const active = activeTemplate === t.id;
+            const count = catalog[t.id]?.length || 0;
+            return (
+              <button key={t.id} onClick={() => setActiveTemplate(t.id)}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  active ? 'bg-accent-blue/15 border border-accent-blue/50 text-accent-blue' : 'bg-navy-800 border border-navy-700 text-navy-300 hover:text-white'
+                }`}>
+                {t.label}
+                <span className={`px-1.5 py-0.5 rounded text-[10px] ${active ? 'bg-accent-blue/20' : 'bg-navy-700/50 text-navy-400'}`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-2 text-[11px] text-navy-400">
+          <span className="text-accent-gold font-semibold">{amazonCount}</span> Amazon rules &middot;{' '}
+          <span className="text-accent-blue font-semibold">{customCount}</span> custom
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-navy-400 text-[10px] uppercase tracking-wide border-b border-navy-800 bg-navy-950/30">
+              <th className="text-left px-3 py-2 font-semibold">Source</th>
+              <th className="text-left px-3 py-2 font-semibold">Section</th>
+              <th className="text-left px-3 py-2 font-semibold">Part</th>
+              <th className="text-left px-3 py-2 font-semibold">Defect</th>
+              <th className="text-left px-3 py-2 font-semibold">Group</th>
+              <th className="text-left px-3 py-2 font-semibold">Class</th>
+              <th className="text-left px-3 py-2 font-semibold">Line</th>
+              <th className="text-left px-3 py-2 font-semibold">Response</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentItems.map((d) => {
+              const sv = SOURCE_VARIANT[d.source] || SOURCE_VARIANT.DSP;
+              const isAmazon = d.source === 'Amazon';
+              return (
+                <tr key={d.id} className={`border-b border-navy-800/50 last:border-b-0 ${isAmazon ? 'bg-accent-gold/[0.03]' : 'hover:bg-navy-800/30'}`}>
+                  <td className="px-3 py-2.5">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-semibold ${sv.bg} ${sv.border} ${sv.text}`}>
+                      {isAmazon && <Lock size={8} />}
+                      {d.source}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-white">{d.section}</td>
+                  <td className="px-3 py-2.5 text-white">{d.part}</td>
+                  <td className="px-3 py-2.5 text-navy-200">{d.defect}</td>
+                  <td className="px-3 py-2.5 text-navy-300">{d.group}</td>
+                  <td className="px-3 py-2.5 text-navy-300">
+                    {d.class === 'Pending' ? <span className="text-accent-gold italic">Pending DFS</span> : d.class}
+                  </td>
+                  <td className="px-3 py-2.5 text-navy-300">
+                    {d.line === 'Pending' ? <span className="text-accent-gold italic">Pending DFS</span> : d.line}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <Badge variant={d.responseType === 'Numeric' ? 'blue' : 'gray'}>{d.responseType}</Badge>
+                  </td>
+                </tr>
+              );
+            })}
+            {currentItems.length === 0 && (
+              <tr><td colSpan={8} className="px-3 py-8 text-center text-sm text-navy-400">No defects configured for this template.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="px-4 py-2.5 border-t border-navy-800 bg-navy-950/30 text-[11px] text-navy-400 flex items-start gap-1.5">
+        <Info size={11} className="text-navy-500 mt-0.5 shrink-0" />
+        <span>
+          You control <strong className="text-white">Section</strong>, <strong className="text-white">Part</strong> and <strong className="text-white">Defect</strong> for custom items.
+          Your DFS Account Manager fills in <strong className="text-white">Group</strong>, <strong className="text-white">Class</strong>, <strong className="text-white">Line</strong> and <strong className="text-white">Response Type</strong> so routing + analytics stay consistent.
+        </span>
+      </div>
+
+      <AnimatePresence>
+        {showAddDefect && <AddCustomDefectModal template={activeTemplate} onSubmit={addCustomDefect} onClose={() => setShowAddDefect(false)} />}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+const DVIC_SECTIONS = ['General', 'Front', 'Driver Side', 'Passenger Side', 'Back Side', 'In-Cab'];
+
+function AddCustomDefectModal({ template, onSubmit, onClose }) {
+  const [form, setForm] = useState({ section: '', part: '', defect: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const valid = form.section && form.part && form.defect.length > 4;
+
+  const submit = () => {
+    setSubmitting(true);
+    setTimeout(() => {
+      onSubmit(form);
+      onClose();
+    }, 500);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        className="bg-navy-900 border border-navy-700 rounded-t-2xl sm:rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-navy-800">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-accent-green/15 border border-accent-green/40 flex items-center justify-center">
+              <Plus size={16} className="text-accent-green" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-white">Add Custom Defect</h3>
+              <p className="text-[11px] text-navy-400">Will be added to the <span className="text-white font-semibold">{DVIC_TEMPLATES.find((t) => t.id === template)?.label}</span> template</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-navy-400 hover:text-white p-2 -mr-2"><X size={20} /></button>
+        </div>
+        <div className="px-4 sm:px-6 py-5 space-y-4 overflow-y-auto flex-1">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-accent-blue/10 border border-accent-blue/30 text-[11px] text-navy-200">
+            <Info size={12} className="text-accent-blue mt-0.5 shrink-0" />
+            <div>Enter Section, Part and Defect. Your DFS Account Manager will review and fill in Group / Class / Line / Response Type before the item is activated for inspectors.</div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Section *</label>
+            <select value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })}
+              className="w-full rounded-lg px-3 py-3 text-base bg-navy-800 border border-navy-700 text-white outline-none focus:border-accent-green cursor-pointer">
+              <option value="">Select a section…</option>
+              {DVIC_SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Part *</label>
+            <input value={form.part} onChange={(e) => setForm({ ...form, part: e.target.value })}
+              placeholder="e.g. Windshield, Side mirror, Brake pads"
+              className="w-full rounded-lg px-3 py-3 text-base bg-navy-800 border border-navy-700 text-white placeholder-navy-500 outline-none focus:border-accent-green" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-navy-300 mb-1.5 block">Defect description *</label>
+            <textarea value={form.defect} onChange={(e) => setForm({ ...form, defect: e.target.value })} rows={3}
+              placeholder="e.g. Windshield cracked larger than 6 inches"
+              className="w-full rounded-lg px-3 py-2.5 text-base bg-navy-800 border border-navy-700 text-white placeholder-navy-500 outline-none focus:border-accent-green resize-none" />
+          </div>
+          <div className="pt-2 border-t border-navy-800">
+            <div className="text-[10px] font-semibold text-navy-400 uppercase tracking-wide mb-2">DFS review fields (filled later)</div>
+            <div className="grid grid-cols-2 gap-2">
+              {['Group', 'Class', 'Line', 'Response Type'].map((f) => (
+                <div key={f} className="px-3 py-2 rounded-lg bg-navy-800/40 border border-dashed border-navy-700 text-[11px]">
+                  <div className="text-navy-500">{f}</div>
+                  <div className="text-accent-gold italic text-xs">Pending DFS</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
+          <button onClick={onClose} className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">Cancel</button>
+          <button onClick={submit} disabled={!valid || submitting}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-accent-green text-white hover:opacity-90 disabled:opacity-40 cursor-pointer">
+            {submitting ? 'Adding…' : <><Check size={14} /> Add Defect</>}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ============================================================
 // Tab: Defect Rules — Auto-approval by category (DSP Owner only)
 // ============================================================
 function DefectRulesTab({ user }) {
@@ -1054,7 +1270,10 @@ function DefectRulesTab({ user }) {
   };
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <div className="space-y-4 max-w-5xl">
+      {/* DVIC Defect Catalog — inspection items per vehicle type */}
+      <DvicDefectCatalog />
+
       {/* Explanation */}
       <div className="rounded-xl border border-accent-green/30 bg-accent-green/5 p-4 sm:p-5">
         <div className="flex items-start gap-3 mb-3">
