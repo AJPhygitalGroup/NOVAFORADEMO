@@ -2072,6 +2072,150 @@ function DetailBox({ label, value, mono, badge, badgeValue }) {
   );
 }
 
+// ============ Today's Defects Table — filter by vendor type + per-row actions ============
+const VENDOR_TYPES = [
+  { id: 'all',       label: 'All',       categories: null },
+  { id: 'amr',       label: 'AMR',       categories: ['Brakes', 'Fluids', 'Lights', 'Mirrors', 'Mechanical', 'Dashboard'] },
+  { id: 'body',      label: 'Body',      categories: ['Body', 'Windshield', 'Paint'] },
+  { id: 'netradyne', label: 'Netradyne', categories: ['Telematics', 'Camera'] },
+  { id: 'tires',     label: 'Tires',     categories: ['Tires', 'Wheels'] },
+  { id: 'detailing', label: 'Detailing', categories: ['Cleanliness', 'Interior', 'Detailing'] },
+];
+
+function TodaysDefectsTable({ defects, daList, onReject, onCreateWO, onOpenCreateDefect, scheduledCount, rushOrderCount }) {
+  const [activeVendor, setActiveVendor] = useState('all');
+  const [rowActions, setRowActions] = useState({}); // id → 'rejected' | 'wo_created'
+
+  const filtered = defects.filter((d) => {
+    if (activeVendor === 'all') return true;
+    const v = VENDOR_TYPES.find((x) => x.id === activeVendor);
+    return v?.categories?.includes(d.category);
+  });
+
+  const handleReject = (d) => {
+    setRowActions({ ...rowActions, [d.id]: 'rejected' });
+    onReject?.(d);
+  };
+  const handleCreateWO = (d) => {
+    setRowActions({ ...rowActions, [d.id]: 'wo_created' });
+    onCreateWO?.(d);
+  };
+
+  return (
+    <div className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-navy-800 bg-navy-950/40 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={14} className="text-accent-orange" />
+          <h3 className="text-sm font-semibold text-white">Today's Defects</h3>
+          <Badge variant="gray">{defects.length} total</Badge>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {scheduledCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-blue/15 border border-accent-blue/30 text-[11px] font-semibold text-accent-blue">
+              {scheduledCount} Scheduled
+            </span>
+          )}
+          {rushOrderCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/30 text-[11px] font-semibold text-accent-red">
+              {rushOrderCount} Rush Order
+            </span>
+          )}
+          <button onClick={onOpenCreateDefect}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-accent-blue text-white text-xs font-semibold hover:opacity-90 cursor-pointer">
+            <Plus size={12} /> Create Defect
+          </button>
+        </div>
+      </div>
+
+      {/* Vendor filter pills */}
+      <div className="px-4 py-2.5 border-b border-navy-800 bg-navy-950/20 flex items-center gap-1.5 overflow-x-auto">
+        <span className="text-[10px] text-navy-400 font-semibold uppercase tracking-wide shrink-0 mr-1">Filter:</span>
+        {VENDOR_TYPES.map((v) => {
+          const count = v.id === 'all' ? defects.length : defects.filter((d) => v.categories?.includes(d.category)).length;
+          const active = activeVendor === v.id;
+          return (
+            <button key={v.id} onClick={() => setActiveVendor(v.id)}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer shrink-0 ${
+                active
+                  ? 'bg-accent-blue/20 border-accent-blue/50 text-accent-blue'
+                  : 'bg-navy-800/40 border-navy-700 text-navy-400 hover:text-white hover:border-navy-600'
+              }`}>
+              {v.label}
+              <span className={`px-1 rounded ${active ? 'bg-black/20' : 'bg-navy-700/50 text-navy-300'}`}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-navy-400 text-[10px] uppercase tracking-wide border-b border-navy-800">
+              <th className="text-left px-4 py-2.5 font-semibold">Van</th>
+              <th className="text-left px-4 py-2.5 font-semibold">Defect</th>
+              <th className="text-left px-4 py-2.5 font-semibold">Category</th>
+              <th className="text-left px-4 py-2.5 font-semibold">Severity</th>
+              <th className="text-left px-4 py-2.5 font-semibold">Reported by</th>
+              <th className="text-left px-4 py-2.5 font-semibold">Status</th>
+              <th className="text-right px-4 py-2.5 font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((d) => {
+              const da = daList.find((x) => x.id === d.da);
+              const action = rowActions[d.id];
+              return (
+                <tr key={d.id} className={`border-b border-navy-800/50 last:border-b-0 transition-colors ${
+                  action === 'rejected' ? 'bg-accent-red/5 opacity-60'
+                  : action === 'wo_created' ? 'bg-accent-green/5'
+                  : 'hover:bg-navy-800/30'
+                }`}>
+                  <td className="px-4 py-2.5 text-white font-semibold font-mono">{d.van}</td>
+                  <td className="px-4 py-2.5 text-white">
+                    <div className="flex items-center gap-1.5">
+                      {d.desc}
+                      {d.photo && <Camera size={11} className="text-navy-400" />}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5"><Badge variant="gray">{d.category}</Badge></td>
+                  <td className="px-4 py-2.5"><Badge variant={severityColors[d.severity]}>{d.severity}</Badge></td>
+                  <td className="px-4 py-2.5 text-[11px] text-navy-300">{da?.name || '—'}</td>
+                  <td className="px-4 py-2.5"><Badge variant={defectStatusColors[d.status] || 'gray'}>{d.status}</Badge></td>
+                  <td className="px-4 py-2.5">
+                    {action === 'rejected' ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-accent-red font-semibold"><X size={11} /> Rejected</span>
+                    ) : action === 'wo_created' ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-accent-green font-semibold"><Check size={11} /> WO sent</span>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => handleReject(d)}
+                          title="Reject defect"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent-red/10 border border-accent-red/40 text-accent-red text-[11px] font-semibold hover:bg-accent-red/20 cursor-pointer">
+                          <X size={11} /> Reject
+                        </button>
+                        <button onClick={() => handleCreateWO(d)}
+                          title="Create Work Order for this defect"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent-green text-white text-[11px] font-semibold hover:opacity-90 cursor-pointer">
+                          <Check size={11} /> Create WO
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-navy-400">No defects match the selected vendor filter.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function RealDVIC({ user }) {
   const [activeSection, setActiveSection] = useState('overview');
   const [openCard, setOpenCard] = useState(null);
@@ -2161,53 +2305,8 @@ export default function RealDVIC({ user }) {
         </motion.div>
       )}
 
-      {/* Section Tabs + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
-        <div className="flex flex-wrap gap-2 items-center">
-          {sections.map((s) => {
-            const Icon = s.icon;
-            return (
-              <button key={s.id} onClick={() => setActiveSection(s.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                  activeSection === s.id ? 'bg-accent-green text-white shadow-lg shadow-accent-green/20' : 'bg-navy-800/60 text-navy-300 hover:bg-navy-700/60 border border-navy-700/40'
-                }`}
-              >
-                <Icon size={15} />
-                {s.label}
-              </button>
-            );
-          })}
-          {/* Order Flex Fleet — DSP Owner + Site Admin only, available from any sub-tab */}
-          {isDspHome && (
-            <button onClick={() => setShowFlexFleet(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent-purple/15 border border-accent-purple/40 text-accent-purple hover:bg-accent-purple/25 transition-all cursor-pointer">
-              <Truck size={15} />
-              Order Flex Fleet
-            </button>
-          )}
-        </div>
-        {activeSection === 'defects' && (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent-blue/15 border border-accent-blue/30 text-xs font-semibold text-accent-blue">
-              {allDefects.filter(d => d.status === 'Scheduled').length} Scheduled
-            </span>
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent-red/15 border border-accent-red/30 text-xs font-semibold text-accent-red">
-              {allDefects.filter(d => d.status === 'Rush Order').length} Rush Order
-            </span>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-blue text-white text-sm font-semibold hover:bg-accent-blue/80 transition-colors cursor-pointer shadow-lg shadow-accent-blue/20"
-            >
-              <Plus size={16} />
-              Create New
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Overview */}
-      {activeSection === 'overview' && (
-        <div className="space-y-6">
+      {/* Home body — single scrollable view (no sub-tabs) */}
+      <div className="space-y-6">
           {/* Key metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {/* DSP-reported defects today — + button floats right, number centered */}
@@ -2369,8 +2468,40 @@ export default function RealDVIC({ user }) {
               ))}
             </div>
           </div>
-        </div>
-      )}
+
+          {/* Today's Defects — table with vendor filter, Reject / Create WO actions */}
+          <TodaysDefectsTable
+            defects={allDefects}
+            daList={daList}
+            onReject={(d) => { /* locally toggled in table component */ }}
+            onCreateWO={(d) => {
+              const fleetVan = fleetSnapshotVans.find((fv) => fv.id === d.van);
+              setCreateWOContext({
+                van: fleetVan || null,
+                defect: {
+                  section: d.section || '',
+                  part: d.category || '',
+                  description: d.desc,
+                  severity: d.severity,
+                },
+              });
+            }}
+            onOpenCreateDefect={() => setShowCreate(true)}
+            scheduledCount={allDefects.filter((d) => d.status === 'Scheduled').length}
+            rushOrderCount={allDefects.filter((d) => d.status === 'Rush Order').length}
+          />
+
+          {/* Order Flex Fleet secondary action — kept at the bottom of the page */}
+          {isDspHome && (
+            <div className="flex justify-end">
+              <button onClick={() => setShowFlexFleet(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent-purple/15 border border-accent-purple/40 text-accent-purple hover:bg-accent-purple/25 transition-all cursor-pointer">
+                <Truck size={15} />
+                Order Flex Fleet
+              </button>
+            </div>
+          )}
+      </div>
 
       {/* DSP Rewards (formerly DSP Loyalty) — moved to /rewards tab, kept here for legacy only */}
       {activeSection === 'rewards_legacy_removed' && (
@@ -2406,46 +2537,7 @@ export default function RealDVIC({ user }) {
         </div>
       )}
 
-      {/* Live Defects Feed */}
-      {activeSection === 'defects' && (
-        <div className="space-y-3">
-          <h3 className="text-base font-semibold text-white mb-2">Today's Defect Reports</h3>
-          {allDefects.map((defect, i) => {
-            const da = daList.find((d) => d.id === defect.da);
-            return (
-              <motion.div key={defect.id}
-                initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                className={`bg-navy-900/60 backdrop-blur border rounded-xl p-4 transition-all hover:bg-navy-800/40 ${
-                  defect.severity === 'Critical' ? 'border-accent-red/40' : 'border-navy-700/40'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant={severityColors[defect.severity]}>{defect.severity}</Badge>
-                      <Badge variant="gray">{defect.category}</Badge>
-                      {defect.photo && (
-                        <span className="flex items-center gap-1 text-[10px] text-navy-400">
-                          <Camera size={10} /> Photo attached
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-white font-medium">{defect.desc}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-navy-400">
-                      <span>{defect.van}</span>
-                      <span>Reported by {da?.name}</span>
-                      <span>{new Date(defect.reportedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  </div>
-                  <Badge variant={defectStatusColors[defect.status] || 'gray'} size="md">
-                    {defect.status}
-                  </Badge>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+      {/* Live Defects feed removed — replaced by the TodaysDefectsTable above */}
 
       {/* DA Leaderboard — moved to /rewards tab, kept here as legacy only */}
       {activeSection === 'leaderboard_legacy_removed' && (
