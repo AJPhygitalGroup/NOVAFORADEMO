@@ -582,49 +582,54 @@ export function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, on
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-        className="bg-navy-900 border border-navy-700 rounded-t-2xl sm:rounded-2xl max-w-2xl w-full h-[95vh] sm:h-auto sm:max-h-[92vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}>
+      className="fixed inset-0 bg-navy-950 z-[60] flex flex-col overflow-hidden">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="w-full h-full flex flex-col">
 
-        {/* Header */}
-        <div className="px-4 sm:px-6 py-4 border-b border-navy-800 bg-gradient-to-r from-accent-blue/10 to-navy-900">
-          <div className="flex items-start justify-between gap-3">
+        {/* Header — sticky full-width */}
+        <div className="px-4 sm:px-6 lg:px-8 py-4 border-b border-navy-800 bg-navy-900/80 backdrop-blur">
+          <div className="max-w-6xl mx-auto flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
+              <button onClick={onClose} className="text-navy-300 hover:text-white p-2 -ml-2 rounded-md hover:bg-navy-800 cursor-pointer" title="Back">
+                <ArrowRight size={18} className="rotate-180" />
+              </button>
               <div className="w-10 h-10 rounded-lg bg-accent-blue/15 border border-accent-blue/40 flex items-center justify-center shrink-0">
                 <ClipboardList size={18} className="text-accent-blue" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Create Work Order</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Create Work Order</h3>
                 <p className="text-[11px] text-navy-400">Send repair work to your chosen vendor</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-navy-400 hover:text-white p-2 -mr-2 shrink-0"><X size={20} /></button>
+            <button onClick={onClose} className="text-navy-400 hover:text-white p-2 -mr-2 shrink-0 rounded-md hover:bg-navy-800" title="Close"><X size={20} /></button>
           </div>
         </div>
 
         {/* Progress */}
         {!success && (
-          <div className="px-4 sm:px-6 pt-4">
-            <div className="flex items-center gap-2 mb-3">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex-1 h-1 rounded-full bg-navy-800 overflow-hidden">
-                  <motion.div className="h-full bg-gradient-to-r from-accent-blue to-accent-purple"
-                    initial={false} animate={{ width: step >= s ? '100%' : '0%' }} transition={{ duration: 0.4 }} />
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-navy-400 mb-2">
-              <span className={step >= 1 ? 'text-white font-semibold' : ''}>1. Vehicle & Defect</span>
-              <span className={step >= 2 ? 'text-white font-semibold' : ''}>2. Choose Vendor</span>
-              <span className={step >= 3 ? 'text-white font-semibold' : ''}>3. Review & Send</span>
+          <div className="px-4 sm:px-6 lg:px-8 pt-4 border-b border-navy-800/60 pb-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center gap-2 mb-3">
+                {[1, 2, 3].map((s) => (
+                  <div key={s} className="flex-1 h-1 rounded-full bg-navy-800 overflow-hidden">
+                    <motion.div className="h-full bg-gradient-to-r from-accent-blue to-accent-purple"
+                      initial={false} animate={{ width: step >= s ? '100%' : '0%' }} transition={{ duration: 0.4 }} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-navy-400">
+                <span className={step >= 1 ? 'text-white font-semibold' : ''}>1. Vehicle & Defect</span>
+                <span className={step >= 2 ? 'text-white font-semibold' : ''}>2. Choose Vendor</span>
+                <span className={step >= 3 ? 'text-white font-semibold' : ''}>3. Review & Send</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Body */}
-        <div className="px-4 sm:px-6 py-5 overflow-y-auto flex-1">
+        {/* Body — centered content with generous max-width for full-page feel */}
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-y-auto flex-1">
+          <div className={step === 2 ? 'max-w-4xl mx-auto' : 'max-w-3xl mx-auto'}>
           <AnimatePresence mode="wait">
             {success ? (
               <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
@@ -912,30 +917,33 @@ export function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, on
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer — sticky at page bottom */}
         {!success && (
-          <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
-            <button onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
-              className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">
-              {step === 1 ? 'Cancel' : 'Back'}
-            </button>
-            {step < 3 ? (
-              <button onClick={() => setStep(step + 1)} disabled={!canGoNext}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-accent-blue to-accent-purple text-white hover:opacity-90 disabled:opacity-40 cursor-pointer">
-                Next <ArrowRight size={14} />
+          <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80 backdrop-blur">
+            <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+              <button onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
+                className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">
+                {step === 1 ? 'Cancel' : 'Back'}
               </button>
-            ) : (
-              <button onClick={handleSubmit} disabled={submitting}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-accent-blue to-accent-purple text-white hover:opacity-90 disabled:opacity-40 cursor-pointer">
-                {submitting ? (<><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full" /> Sending…</>) : (<>Send to Vendor <Send size={14} /></>)}
-              </button>
-            )}
+              {step < 3 ? (
+                <button onClick={() => setStep(step + 1)} disabled={!canGoNext}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-accent-blue to-accent-purple text-white hover:opacity-90 disabled:opacity-40 cursor-pointer">
+                  Next <ArrowRight size={14} />
+                </button>
+              ) : (
+                <button onClick={handleSubmit} disabled={submitting}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-accent-blue to-accent-purple text-white hover:opacity-90 disabled:opacity-40 cursor-pointer">
+                  {submitting ? (<><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full" /> Sending…</>) : (<>Send to Vendor <Send size={14} /></>)}
+                </button>
+              )}
+            </div>
           </div>
         )}
         {success && (
-          <div className="flex items-center justify-end px-4 sm:px-6 py-3 sm:py-4 border-t border-navy-800">
+          <div className="flex items-center justify-end px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-t border-navy-800">
             <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-accent-green text-white hover:opacity-90 cursor-pointer">Done</button>
           </div>
         )}
