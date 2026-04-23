@@ -2197,7 +2197,7 @@ export default function RealDVIC({ user }) {
             {/* DSP-reported defects today + rush order + approve new button */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
               onClick={() => setOpenCard('reported')}
-              className="relative bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer">
+              className="relative bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer h-full flex flex-col">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-lg bg-accent-green/10 flex items-center justify-center">
                   <Shield size={20} className="text-accent-green" />
@@ -2212,17 +2212,19 @@ export default function RealDVIC({ user }) {
               </div>
               <div className="text-2xl font-bold text-white mb-1">{totalDefectsToday}</div>
               <div className="text-sm text-navy-400">DSP-reported defects today</div>
-              {rushOrders > 0 && (
-                <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/30">
-                  <span className="text-[10px] font-semibold text-accent-red">{rushOrders} Rush Order</span>
-                </div>
-              )}
+              <div className="mt-auto pt-2">
+                {rushOrders > 0 ? (
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/30">
+                    <span className="text-[10px] font-semibold text-accent-red">{rushOrders} Rush Order</span>
+                  </div>
+                ) : <div className="h-[22px]" />}
+              </div>
             </motion.div>
 
             {/* Vans Inspected - with two sub-links */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.4 }}
               onClick={() => setOpenCard('inspected')}
-              className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer">
+              className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer h-full flex flex-col">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 flex items-center justify-center">
                   <ShieldCheck size={36} className="text-accent-green" fill="#22c55e" strokeWidth={2.2} stroke="white" />
@@ -2231,21 +2233,21 @@ export default function RealDVIC({ user }) {
               </div>
               <div className="text-2xl font-bold text-white mb-1">23</div>
               <div className="text-sm text-navy-400">Vans Inspected in Recent QC DVIC</div>
-              <div className="flex gap-3 mt-2 text-[11px]">
+              <div className="flex gap-3 mt-auto pt-2 text-[11px]">
                 <button onClick={(e) => { e.stopPropagation(); setOpenCard('inspected'); }} className="text-accent-red hover:underline cursor-pointer">Not inspected ({notInspected})</button>
                 <button onClick={(e) => { e.stopPropagation(); setOpenCard('inspected'); }} className="text-accent-blue hover:underline cursor-pointer">Approve New ({newToApprove})</button>
               </div>
             </motion.div>
 
-            <div onClick={() => setOpenCard('immediate')} className="cursor-pointer">
+            <div onClick={() => setOpenCard('immediate')} className="cursor-pointer h-full">
               <MetricCard icon={Hourglass} label="Defects for approval" value={10} subtitle="Immediate Action Required" color="accent-blue" delay={0.1} labelClassName="text-sm font-semibold text-accent-red" />
             </div>
 
-            <div onClick={() => setOpenCard('scheduled')} className="cursor-pointer">
+            <div onClick={() => setOpenCard('scheduled')} className="cursor-pointer h-full">
               <MetricCard icon={AlertTriangle} label="Vehicle Repair Scheduled Tonight" value={scheduledTonight} subtitle="Immediate Action Required" color="accent-red" delay={0.15} />
             </div>
 
-            <div onClick={() => setShowRepairHistory(true)} className="cursor-pointer">
+            <div onClick={() => setShowRepairHistory(true)} className="cursor-pointer h-full">
               <MetricCard
                 icon={CheckCheck}
                 label="Defects Repaired"

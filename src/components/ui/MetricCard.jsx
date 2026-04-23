@@ -17,7 +17,7 @@ export default function MetricCard({ icon: Icon, label, value, subtitle, trend, 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
-      className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all duration-300 group"
+      className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all duration-300 group h-full flex flex-col"
     >
       <div className="flex items-start justify-between mb-3">
         <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center`}>
@@ -46,7 +46,9 @@ export default function MetricCard({ icon: Icon, label, value, subtitle, trend, 
         )}
       </div>
       <div className={labelClassName || 'text-sm text-navy-400'}>{label}</div>
-      {subtitle && <div className="text-xs text-navy-500 mt-1">{subtitle}</div>}
+      <div className="mt-auto pt-2">
+        {subtitle && <div className="text-xs text-navy-500">{subtitle}</div>}
+      </div>
     </motion.div>
   );
 }
