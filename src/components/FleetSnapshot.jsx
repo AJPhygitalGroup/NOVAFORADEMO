@@ -925,8 +925,12 @@ export function CreateWorkOrderModal({ initialVan, initialDefect, vans, user, on
           <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80 backdrop-blur">
             <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
               <button onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">
-                {step === 1 ? 'Cancel' : 'Back'}
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                  step === 1
+                    ? 'text-accent-red border border-accent-red/40 bg-accent-red/10 hover:bg-accent-red/20'
+                    : 'text-navy-300 hover:text-white hover:bg-navy-800'
+                }`}>
+                {step === 1 ? <><X size={12} className="inline mr-1" /> Reject</> : 'Back'}
               </button>
               {step < 3 ? (
                 <button onClick={() => setStep(step + 1)} disabled={!canGoNext}
