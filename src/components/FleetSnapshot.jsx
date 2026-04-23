@@ -261,65 +261,89 @@ export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreat
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end lg:items-stretch lg:justify-end"
-        onClick={onClose}>
+        className="fixed inset-0 bg-navy-950 z-50 flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}>
         <motion.div
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          transition={{ type: 'spring', damping: 30, stiffness: 260 }}
-          className="bg-navy-900 border-t lg:border-t-0 lg:border-l border-navy-700 w-full lg:max-w-xl h-[92vh] lg:h-auto rounded-t-2xl lg:rounded-none flex flex-col overflow-hidden"
-          onClick={(e) => e.stopPropagation()}>
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="w-full h-full flex flex-col">
 
-          {/* Header */}
-          <div className="px-4 sm:px-5 py-4 border-b border-navy-800 bg-navy-950/40">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <h3 className="text-lg font-semibold text-white">{van.id}</h3>
-                  <Badge variant={SEVERITY_BADGE[van.severity === 'critical' ? 'Critical' : van.severity === 'high' ? 'High' : van.severity === 'medium' ? 'Medium' : van.severity === 'low' ? 'Low' : 'Low'] || 'gray'}>
-                    {SEVERITY_CONFIG[van.severity]?.label || 'Clean'}
-                  </Badge>
-                  {van.grounded && <Badge variant="red" size="md">Grounded</Badge>}
+          {/* Header — sticky full-width */}
+          <div className="px-4 sm:px-6 lg:px-8 py-4 border-b border-navy-800 bg-navy-900/80 backdrop-blur">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button onClick={onClose}
+                    className="text-navy-300 hover:text-white p-2 -ml-2 rounded-md hover:bg-navy-800 cursor-pointer shrink-0" title="Back">
+                    <ArrowRight size={18} className="rotate-180" />
+                  </button>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white">{van.id}</h3>
+                      <Badge variant={SEVERITY_BADGE[van.severity === 'critical' ? 'Critical' : van.severity === 'high' ? 'High' : van.severity === 'medium' ? 'Medium' : van.severity === 'low' ? 'Low' : 'Low'] || 'gray'} size="md">
+                        {SEVERITY_CONFIG[van.severity]?.label || 'Clean'}
+                      </Badge>
+                      {van.grounded && <Badge variant="red" size="md">Grounded</Badge>}
+                    </div>
+                    <div className="text-xs sm:text-sm text-navy-300 truncate">
+                      <span>{van.model}</span>
+                      <span className="text-navy-600 mx-2">·</span>
+                      <span className="font-mono">{van.plate}</span>
+                      <span className="text-navy-600 mx-2">·</span>
+                      <span>{van.dsp}</span>
+                      <span className="text-navy-600 mx-2">·</span>
+                      <span className="font-mono">{van.mileage.toLocaleString()} mi</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-navy-400 truncate">{van.model} · {van.plate}</div>
-                <div className="text-xs text-navy-400">{van.dsp} · {van.mileage.toLocaleString()} mi</div>
+                <button onClick={onClose} className="text-navy-400 hover:text-white p-2 -mr-2 shrink-0 rounded-md hover:bg-navy-800" title="Close"><X size={20} /></button>
               </div>
-              <button onClick={onClose} className="text-navy-400 hover:text-white p-2 -mr-2 shrink-0"><X size={20} /></button>
-            </div>
 
-            {/* Last inspection + quick stats */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-lg bg-navy-800/60 border border-navy-700/40 px-3 py-2">
-                <div className="text-[10px] text-navy-400 uppercase tracking-wide">Last inspected</div>
-                <div className="text-white font-medium flex items-center gap-1 mt-0.5"><Clock size={11} className="text-accent-blue" /> {van.lastInspected}</div>
-                <div className="text-[11px] text-navy-400 truncate">by {van.inspector}</div>
-              </div>
-              <div className="rounded-lg bg-navy-800/60 border border-navy-700/40 px-3 py-2">
-                <div className="text-[10px] text-navy-400 uppercase tracking-wide">Current defects</div>
-                <div className={`text-lg font-bold ${SEVERITY_CONFIG[van.severity]?.text || 'text-accent-green'}`}>{van.defectCount}</div>
-                <div className="text-[11px] text-navy-400">{van.defectCount === 0 ? 'Clean bill' : 'Active issues'}</div>
-              </div>
-            </div>
-
-            {/* Grounded banner */}
-            {van.grounded && (
-              <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-accent-red/10 border border-accent-red/40">
-                <Lock size={14} className="text-accent-red mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-accent-red">Vehicle Grounded</div>
-                  <div className="text-[11px] text-navy-300 mt-0.5">{van.groundedReason || 'Unsafe for routing'}</div>
+              {/* Last inspection + quick stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="rounded-lg bg-navy-800/60 border border-navy-700/40 px-3 py-2">
+                  <div className="text-[10px] text-navy-400 uppercase tracking-wide">Last inspected</div>
+                  <div className="text-white font-medium flex items-center gap-1 mt-0.5"><Clock size={11} className="text-accent-blue" /> {van.lastInspected}</div>
+                  <div className="text-[11px] text-navy-400 truncate">by {van.inspector}</div>
                 </div>
-                {canTakeActions && (
-                  <button onClick={handleUnground} className="text-[11px] font-semibold text-accent-green hover:underline shrink-0">Unground</button>
-                )}
+                <div className="rounded-lg bg-navy-800/60 border border-navy-700/40 px-3 py-2">
+                  <div className="text-[10px] text-navy-400 uppercase tracking-wide">Current defects</div>
+                  <div className={`text-lg font-bold ${SEVERITY_CONFIG[van.severity]?.text || 'text-accent-green'}`}>{van.defectCount}</div>
+                  <div className="text-[11px] text-navy-400">{van.defectCount === 0 ? 'Clean bill' : 'Active issues'}</div>
+                </div>
+                <div className="rounded-lg bg-navy-800/60 border border-navy-700/40 px-3 py-2">
+                  <div className="text-[10px] text-navy-400 uppercase tracking-wide">Mileage</div>
+                  <div className="text-sm text-white font-semibold mt-0.5 font-mono">{van.mileage.toLocaleString()} mi</div>
+                </div>
+                <div className="rounded-lg bg-navy-800/60 border border-navy-700/40 px-3 py-2">
+                  <div className="text-[10px] text-navy-400 uppercase tracking-wide">DSP</div>
+                  <div className="text-sm text-white font-semibold mt-0.5 truncate">{van.dsp}</div>
+                </div>
               </div>
-            )}
+
+              {/* Grounded banner */}
+              {van.grounded && (
+                <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-accent-red/10 border border-accent-red/40">
+                  <Lock size={14} className="text-accent-red mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-accent-red">Vehicle Grounded</div>
+                    <div className="text-[11px] text-navy-300 mt-0.5">{van.groundedReason || 'Unsafe for routing'}</div>
+                  </div>
+                  {canTakeActions && (
+                    <button onClick={handleUnground} className="text-[11px] font-semibold text-accent-green hover:underline shrink-0">Unground</button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-5">
-            {/* Photo carousel */}
-            <div>
+          {/* Body — centered with generous max-width; two-column on wide screens */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* LEFT column — Photo carousel (2/5 on desktop, full width mobile) */}
+            <div className="lg:col-span-2 lg:sticky lg:top-4 lg:self-start">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-navy-300">
                   <ImageIcon size={13} className="text-accent-blue" /> Photos ({photos.length})
@@ -344,9 +368,21 @@ export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreat
                   {photoIndex + 1} / {photos.length}
                 </div>
               </motion.div>
+              {/* Photo thumbnails row */}
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {photos.map((p, i) => (
+                  <button key={p.id} onClick={() => setPhotoIndex(i)}
+                    className={`aspect-[4/3] rounded-md border flex items-center justify-center transition-all ${
+                      i === photoIndex ? 'border-accent-blue bg-accent-blue/10' : 'border-navy-700 bg-navy-800/60 hover:border-navy-600'
+                    }`}>
+                    <Camera size={14} className={i === photoIndex ? 'text-accent-blue' : 'text-navy-500'} />
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Accumulated defects */}
+            {/* RIGHT column — Defects (3/5 on desktop, stacked on mobile) */}
+            <div className="lg:col-span-3">
             {defects.length > 0 ? (
               <div>
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-navy-300 mb-3">
@@ -418,22 +454,28 @@ export function VehicleReportCard({ van, onClose, onUpdateVan, userRole, onCreat
                 <p className="text-xs text-navy-400">Vehicle passed its most recent inspection.</p>
               </div>
             )}
-          </div>
+            </div> {/* /right column */}
+            </div> {/* /inner grid */}
+          </div> {/* /body */}
 
           {/* Footer — Create Work Order is the single primary action */}
           {canTakeActions && !van.grounded && (
-            <div className="flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
-              <button
-                onClick={() => onCreateWO?.(van, null)}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-accent-blue to-accent-purple text-white text-sm font-semibold hover:opacity-90 cursor-pointer"
-              >
-                <ClipboardList size={14} /> Create Work Order
-              </button>
+            <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80 backdrop-blur">
+              <div className="max-w-6xl mx-auto flex items-center gap-2">
+                <button
+                  onClick={() => onCreateWO?.(van, null)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-accent-blue to-accent-purple text-white text-sm font-semibold hover:opacity-90 cursor-pointer"
+                >
+                  <ClipboardList size={14} /> Create Work Order
+                </button>
+              </div>
             </div>
           )}
           {van.grounded && (
-            <div className="flex items-center justify-end gap-2 px-4 sm:px-5 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
-              <button onClick={onClose} className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">Close</button>
+            <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-t border-navy-800 bg-navy-900/80">
+              <div className="max-w-6xl mx-auto flex items-center justify-end gap-2">
+                <button onClick={onClose} className="px-4 py-2.5 rounded-lg text-sm font-medium text-navy-300 hover:text-white hover:bg-navy-800 cursor-pointer">Close</button>
+              </div>
             </div>
           )}
         </motion.div>
