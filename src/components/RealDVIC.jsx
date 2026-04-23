@@ -6,7 +6,7 @@ import { daList, dvicDefects, dspRewards, dspList, weeklyInspections, defectCate
 import MetricCard from './ui/MetricCard';
 import ProgressBar from './ui/ProgressBar';
 import Badge from './ui/Badge';
-import FleetSnapshot, { FlexFleetModal, VehicleReportCard, CreateWorkOrderModal } from './FleetSnapshot';
+import { FlexFleetModal, VehicleReportCard, CreateWorkOrderModal } from './FleetSnapshot';
 import { fleetSnapshotVans } from '../data/mockData';
 
 const tierConfig = {
@@ -279,9 +279,10 @@ function InspectedDetailRenderer({ data, onOpenVehicleReport }) {
 
   // Map an inspected van to the fleetSnapshotVans record so we can open the
   // existing Vehicle Report Card with real plate, mileage, defects, etc.
+  // Every row is clickable — clean vans just show their photos/info, while
+  // flagged vans show the Cancel / Approve actions per defect.
   const handleRowClick = (v) => {
-    const flagged = v.result === 'Flagged' || v.severity === 'defective';
-    if (!flagged || !onOpenVehicleReport) return;
+    if (!onOpenVehicleReport) return;
     const fleetVan = fleetSnapshotVans.find((fv) => fv.id === v.id);
     if (fleetVan) onOpenVehicleReport(fleetVan);
   };
@@ -364,7 +365,9 @@ function InspectedDetailRenderer({ data, onOpenVehicleReport }) {
             const cat = INSPECTOR_CATEGORIES.find((c) => c.id === v.category);
             const style = ROW_SEVERITY_STYLES[v.severity] || ROW_SEVERITY_STYLES.clean;
             const flagged = v.result === 'Flagged' || v.severity === 'defective';
-            const clickable = flagged && !!onOpenVehicleReport;
+            // All rows are clickable now — clicking opens the Vehicle Report Card
+            // where defects can be approved (→ Create WO) or rejected.
+            const clickable = !!onOpenVehicleReport;
             const defectCount = v.severity === 'defective' ? 5 : v.severity === 'high' ? 3 : v.severity === 'medium' ? 2 : 0;
             return (
               <div key={v.id}
@@ -398,9 +401,7 @@ function InspectedDetailRenderer({ data, onOpenVehicleReport }) {
             <div className="text-center py-6 text-xs text-navy-400">No inspections match the selected filters.</div>
           )}
         </div>
-        {filteredInspected.some((v) => v.result === 'Flagged' || v.severity === 'defective') && (
-          <p className="text-[10px] text-navy-500 mt-2 italic">Tip: click on a flagged van to review accumulated defects and create work orders.</p>
-        )}
+        <p className="text-[10px] text-navy-500 mt-2 italic">Tip: click any van to open its report — from there, approve defects (auto-create a work order) or reject them.</p>
       </div>
 
       {/* Not inspected list */}
@@ -2102,13 +2103,14 @@ export default function RealDVIC({ user }) {
   const newToApprove = 2;
 
   // Sub-tabs for DSP Owner home:
-  //   Overview · Today's Defects · QC DVIC (embedded fleet snapshot)
-  // DA / DSP Rewards moved to a dedicated Rewards top-level tab.
+  //   Overview · Today's Defects
+  // QC DVIC is no longer a tab — it's reached by clicking the 'Vans Inspected'
+  // metric card, which lists the vans; clicking a row opens its Vehicle Report
+  // Card where the DSP approves/rejects defects and creates work orders.
   const isDspHome = user?.role === 'dsp_owner' || user?.role === 'site_admin';
   const sections = [
     { id: 'overview', label: 'Overview', icon: Shield },
     { id: 'defects', label: "Today's Defects", icon: AlertTriangle },
-    ...(isDspHome ? [{ id: 'snapshot', label: 'QC DVIC', icon: LayoutGrid }] : []),
   ];
 
   const canStartInspection = user?.role === 'vendor_admin' || user?.role === 'technician' || user?.role === 'site_admin';
@@ -2343,13 +2345,6 @@ export default function RealDVIC({ user }) {
               ))}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* QC DVIC — Fleet Snapshot embedded for DSP Owner */}
-      {activeSection === 'snapshot' && (
-        <div className="-mt-2">
-          <FleetSnapshot user={user} embedded />
         </div>
       )}
 
