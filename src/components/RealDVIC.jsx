@@ -2101,6 +2101,20 @@ export default function RealDVIC({ user }) {
   const scheduledTonight = allDefects.filter((d) => d.status === 'Rush Order' || d.status === 'Scheduled').length;
   const notInspected = 7;
   const newToApprove = 2;
+  // Defects awaiting DSP approval — drives the AlertTriangle visibility on that card
+  const pendingApprovalCount = 10;
+  // Repairs still waiting for DSP feedback (thumbs up/down) on the vendor's work
+  const repairsPendingFeedback = repairedDefectsCount;
+  // Next inspection date auto-computed from the org's inspection frequency
+  // set during initial setup (first_inspection + frequency_days). For the
+  // demo we compute today + 7 days and render as MM-DD-YYYY.
+  const nextInspectionDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${mm}-${dd}-${d.getFullYear()}`;
+  })();
 
   // Sub-tabs for DSP Owner home:
   //   Overview · Today's Defects
@@ -2196,14 +2210,11 @@ export default function RealDVIC({ user }) {
         <div className="space-y-6">
           {/* Key metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            {/* DSP-reported defects today + rush order + approve new button */}
+            {/* DSP-reported defects today — + button floats right, number centered */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
               onClick={() => setOpenCard('reported')}
               className="relative bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer h-full flex flex-col">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-accent-green/10 flex items-center justify-center">
-                  <Shield size={20} className="text-accent-green" />
-                </div>
+              <div className="flex items-start justify-end mb-3">
                 <button
                   onClick={(e) => { e.stopPropagation(); setCreateWOContext({ van: null, defect: null }); }}
                   className="w-9 h-9 rounded-full bg-accent-blue/15 border border-accent-blue/40 text-accent-blue hover:bg-accent-blue/25 transition-colors cursor-pointer flex items-center justify-center"
@@ -2212,9 +2223,11 @@ export default function RealDVIC({ user }) {
                   <Plus size={18} />
                 </button>
               </div>
-              <div className="text-2xl font-bold text-white mb-1">{totalDefectsToday}</div>
-              <div className="text-sm text-navy-400">DSP-reported defects today</div>
-              <div className="mt-auto pt-2">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white mb-1">{totalDefectsToday}</div>
+                <div className="text-sm text-navy-400">DSP-reported defects today</div>
+              </div>
+              <div className="mt-auto pt-2 flex justify-center">
                 {rushOrders > 0 ? (
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/30">
                     <span className="text-[10px] font-semibold text-accent-red">{rushOrders} Rush Order</span>
@@ -2223,35 +2236,45 @@ export default function RealDVIC({ user }) {
               </div>
             </motion.div>
 
-            {/* Vans Inspected - with two sub-links */}
+            {/* Vans Inspected — 23 of 30, next inspection date below */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.4 }}
               onClick={() => setOpenCard('inspected')}
               className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer h-full flex flex-col">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 flex items-center justify-center">
-                  <ShieldCheck size={36} className="text-accent-green" fill="#22c55e" strokeWidth={2.2} stroke="white" />
-                </div>
+              <div className="flex items-start justify-end mb-3">
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent-green/15 text-accent-green">+18%</span>
               </div>
-              <div className="text-2xl font-bold text-white mb-1">23</div>
-              <div className="text-sm text-navy-400">Vans Inspected in Recent QC DVIC</div>
-              <div className="flex gap-3 mt-auto pt-2 text-[11px]">
-                <button onClick={(e) => { e.stopPropagation(); setOpenCard('inspected'); }} className="text-accent-red hover:underline cursor-pointer">Not inspected ({notInspected})</button>
-                <button onClick={(e) => { e.stopPropagation(); setOpenCard('inspected'); }} className="text-accent-blue hover:underline cursor-pointer">Approve New ({newToApprove})</button>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white mb-1">23 <span className="text-navy-400 font-normal text-xl">of 30</span></div>
+                <div className="text-sm text-navy-400">Vans Inspected in Recent QC DVIC</div>
+              </div>
+              <div className="mt-auto pt-2 text-center text-[11px] text-navy-400">
+                Next inspection <span className="text-white font-medium">{nextInspectionDate}</span>
               </div>
             </motion.div>
 
             <div onClick={() => setOpenCard('immediate')} className="cursor-pointer h-full">
-              <MetricCard icon={Hourglass} label="Defects for approval" value={10} subtitle="Immediate Action Required" color="accent-blue" delay={0.1} labelClassName="text-sm font-semibold text-accent-red" />
+              <MetricCard
+                icon={pendingApprovalCount > 0 ? AlertTriangle : undefined}
+                label="Defects for approval"
+                value={pendingApprovalCount}
+                color="accent-red"
+                delay={0.1}
+                labelClassName="text-sm font-semibold text-accent-red"
+              />
             </div>
 
             <div onClick={() => setOpenCard('scheduled')} className="cursor-pointer h-full">
-              <MetricCard icon={AlertTriangle} label="Vehicle Repair Scheduled Tonight" value={scheduledTonight} subtitle="Immediate Action Required" color="accent-red" delay={0.15} />
+              <MetricCard
+                icon={AlertTriangle}
+                label="Scheduled Vehicle"
+                value={scheduledTonight}
+                color="accent-red"
+                delay={0.15}
+              />
             </div>
 
             <div onClick={() => setShowRepairHistory(true)} className="cursor-pointer h-full">
               <MetricCard
-                icon={CheckCheck}
                 label="Defects Repaired"
                 value={repairedDefectsCount}
                 subtitle={repairedThisWeekCount > 0 ? `${repairedThisWeekCount} this week · tap for history` : 'Completed by vendors'}
@@ -2259,6 +2282,7 @@ export default function RealDVIC({ user }) {
                 delay={0.2}
                 trend={repairedThisWeekCount > 0 ? Math.round((repairedThisWeekCount / Math.max(totalDefectsToday, 1)) * 100) : undefined}
                 trendUp
+                warning={repairsPendingFeedback > 0 ? `${repairsPendingFeedback} pending feedback` : undefined}
               />
             </div>
           </div>
