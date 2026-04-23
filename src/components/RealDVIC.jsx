@@ -593,7 +593,7 @@ function ScheduledRepairsGrouped({ items }) {
   );
 }
 
-function CardDetailModal({ cardKey, onClose, onOpenVehicleReport, onApproveDefect }) {
+function CardDetailModal({ cardKey, onClose, onOpenVehicleReport, onApproveDefect, onOrderFlexFleet }) {
   if (!cardKey) return null;
   const data = cardDetails[cardKey];
   const Icon = data.icon;
@@ -666,7 +666,14 @@ function CardDetailModal({ cardKey, onClose, onOpenVehicleReport, onApproveDefec
           )}
         </div>
 
-        <div className="p-4 border-t border-navy-800 flex justify-end gap-2">
+        <div className="p-4 border-t border-navy-800 flex items-center justify-between gap-2">
+          {/* Order Flex Fleet — shown only on the Scheduled Repairs modal */}
+          {cardKey === 'scheduled' && onOrderFlexFleet ? (
+            <button onClick={onOrderFlexFleet}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-purple/15 border border-accent-purple/40 text-accent-purple text-sm font-semibold hover:bg-accent-purple/25 transition-colors cursor-pointer">
+              <Truck size={14} /> Order Flex Fleet
+            </button>
+          ) : <span />}
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-navy-600 text-navy-300 text-sm font-medium hover:bg-navy-800 transition-colors cursor-pointer">
             Close
           </button>
@@ -2471,17 +2478,7 @@ export default function RealDVIC({ user }) {
           </div>
 
           {/* Today's Defects table moved to its own top-level 'Defects' page */}
-
-          {/* Order Flex Fleet secondary action — kept at the bottom of the page */}
-          {isDspHome && (
-            <div className="flex justify-end">
-              <button onClick={() => setShowFlexFleet(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent-purple/15 border border-accent-purple/40 text-accent-purple hover:bg-accent-purple/25 transition-all cursor-pointer">
-                <Truck size={15} />
-                Order Flex Fleet
-              </button>
-            </div>
-          )}
+          {/* Order Flex Fleet lives inside the Scheduled Repairs modal footer */}
       </div>
 
       {/* DSP Rewards (formerly DSP Loyalty) — moved to /rewards tab, kept here for legacy only */}
@@ -2612,6 +2609,7 @@ export default function RealDVIC({ user }) {
           <CardDetailModal
             cardKey={openCard}
             onClose={() => setOpenCard(null)}
+            onOrderFlexFleet={isDspHome ? () => { setOpenCard(null); setShowFlexFleet(true); } : null}
             onOpenVehicleReport={(van) => {
               // Close the Vans Inspected modal first, then pop the Vehicle Report Card
               setOpenCard(null);
