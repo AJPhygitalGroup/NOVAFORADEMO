@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, Wrench, ChevronRight, Menu, X, Sun, Moon, Bell,
   LayoutGrid, Truck, ClipboardList, Settings, Eye, Star, Home as HomeIcon, Gift,
-  Droplets, Sparkles
+  Droplets, Sparkles, AlertTriangle
 } from 'lucide-react';
 import VendorScorecard from './VendorScorecard';
 import RealDVIC from './RealDVIC';
@@ -14,6 +14,7 @@ import WorkOrders from './WorkOrders';
 import AdminPanel from './AdminPanel';
 import GhostMode from './GhostMode';
 import Rewards from './Rewards';
+import Defects from './Defects';
 import NotificationsPanel from './NotificationsPanel';
 import RoleSwitcher from './ui/RoleSwitcher';
 import { rolePermissions, notificationsSeed } from '../data/mockData';
@@ -21,6 +22,7 @@ import { rolePermissions, notificationsSeed } from '../data/mockData';
 // View catalog — id, label, subtitle, icon, accent color, component
 const VIEW_CATALOG = {
   dvic:        { id: 'dvic',        label: 'Home',             subtitle: 'Command center',           icon: HomeIcon,       color: 'text-accent-green',  Component: RealDVIC },
+  defects:     { id: 'defects',     label: 'Defects',          subtitle: 'All reported defects',     icon: AlertTriangle,  color: 'text-accent-orange', Component: Defects },
   snapshot:    { id: 'snapshot',    label: 'QC DVIC',          subtitle: 'Heatmap view',             icon: LayoutGrid,     color: 'text-accent-blue',   Component: FleetSnapshot },
   vehicles:    { id: 'vehicles',    label: 'Vehicles',         subtitle: 'Fleet directory',          icon: Truck,          color: 'text-accent-green',  Component: MyVehicles },
   work_orders: { id: 'work_orders', label: 'Work Orders',      subtitle: 'Vendor hub',               icon: ClipboardList,  color: 'text-accent-purple', Component: WorkOrders },

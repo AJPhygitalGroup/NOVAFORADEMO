@@ -2073,7 +2073,8 @@ function DetailBox({ label, value, mono, badge, badgeValue }) {
 }
 
 // ============ Today's Defects Table — filter by vendor type + per-row actions ============
-const VENDOR_TYPES = [
+// Exported so the dedicated Defects page can reuse the same table without duplication.
+export const VENDOR_TYPES = [
   { id: 'all',       label: 'All',       categories: null },
   { id: 'amr',       label: 'AMR',       categories: ['Brakes', 'Fluids', 'Lights', 'Mirrors', 'Mechanical', 'Dashboard'] },
   { id: 'body',      label: 'Body',      categories: ['Body', 'Windshield', 'Paint'] },
@@ -2082,7 +2083,7 @@ const VENDOR_TYPES = [
   { id: 'detailing', label: 'Detailing', categories: ['Cleanliness', 'Interior', 'Detailing'] },
 ];
 
-function TodaysDefectsTable({ defects, daList, onReject, onCreateWO, onOpenCreateDefect, scheduledCount, rushOrderCount }) {
+export function TodaysDefectsTable({ defects, daList, onReject, onCreateWO, onOpenCreateDefect, scheduledCount, rushOrderCount, title = "Today's Defects" }) {
   const [activeVendor, setActiveVendor] = useState('all');
   const [rowActions, setRowActions] = useState({}); // id → 'rejected' | 'wo_created'
 
@@ -2107,7 +2108,7 @@ function TodaysDefectsTable({ defects, daList, onReject, onCreateWO, onOpenCreat
       <div className="px-4 py-3 border-b border-navy-800 bg-navy-950/40 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <AlertTriangle size={14} className="text-accent-orange" />
-          <h3 className="text-sm font-semibold text-white">Today's Defects</h3>
+          <h3 className="text-sm font-semibold text-white">{title}</h3>
           <Badge variant="gray">{defects.length} total</Badge>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -2469,27 +2470,7 @@ export default function RealDVIC({ user }) {
             </div>
           </div>
 
-          {/* Today's Defects — table with vendor filter, Reject / Create WO actions */}
-          <TodaysDefectsTable
-            defects={allDefects}
-            daList={daList}
-            onReject={(d) => { /* locally toggled in table component */ }}
-            onCreateWO={(d) => {
-              const fleetVan = fleetSnapshotVans.find((fv) => fv.id === d.van);
-              setCreateWOContext({
-                van: fleetVan || null,
-                defect: {
-                  section: d.section || '',
-                  part: d.category || '',
-                  description: d.desc,
-                  severity: d.severity,
-                },
-              });
-            }}
-            onOpenCreateDefect={() => setShowCreate(true)}
-            scheduledCount={allDefects.filter((d) => d.status === 'Scheduled').length}
-            rushOrderCount={allDefects.filter((d) => d.status === 'Rush Order').length}
-          />
+          {/* Today's Defects table moved to its own top-level 'Defects' page */}
 
           {/* Order Flex Fleet secondary action — kept at the bottom of the page */}
           {isDspHome && (
