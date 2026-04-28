@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, Wrench, ChevronRight, Menu, X, Sun, Moon, Bell,
-  LayoutGrid, Truck, ClipboardList, Settings, Eye, Star, Home as HomeIcon, Gift,
+  LayoutGrid, Truck, ClipboardList, Settings, Eye, Star, Home as HomeIcon,
   AlertTriangle, ChevronDown, Check
 } from 'lucide-react';
 import VendorScorecard from './VendorScorecard';
@@ -13,7 +13,6 @@ import MyVehicles from './MyVehicles';
 import WorkOrders from './WorkOrders';
 import AdminPanel from './AdminPanel';
 import GhostMode from './GhostMode';
-import Rewards from './Rewards';
 import Defects from './Defects';
 import NotificationsPanel from './NotificationsPanel';
 import RoleSwitcher from './ui/RoleSwitcher';
@@ -28,7 +27,6 @@ const VIEW_CATALOG = {
   work_orders: { id: 'work_orders', label: 'Work Orders',      subtitle: 'Vendor hub',               icon: ClipboardList,  color: 'text-accent-purple', Component: WorkOrders },
   body:        { id: 'body',        label: 'Body Repairs',     subtitle: 'Enhanced Portal',          icon: Wrench,         color: 'text-accent-purple', Component: BodyRepairs },
   scorecard:   { id: 'scorecard',   label: 'Vendor Scorecard', subtitle: 'DFS Value Proposition',    icon: BarChart3,      color: 'text-accent-blue',   Component: VendorScorecard },
-  rewards:     { id: 'rewards',     label: 'Rewards',          subtitle: 'DA + DSP loyalty',         icon: Gift,           color: 'text-accent-gold',   Component: Rewards },
   admin:       { id: 'admin',       label: 'Admin',            subtitle: 'Users, org, security',     icon: Settings,       color: 'text-accent-gold',   Component: AdminPanel },
   ghost:       { id: 'ghost',       label: 'Ghost Mode',       subtitle: 'Impersonate users',        icon: Eye,            color: 'text-accent-red',    Component: GhostMode },
 };

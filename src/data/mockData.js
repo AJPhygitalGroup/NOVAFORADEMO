@@ -66,11 +66,13 @@ export const demoAccounts = [
 // Note: `dvic` is the new Home/command center. `defects` is the DSP-facing
 // defects table that used to sit under Home as a sub-tab. Vendors & site
 // admins still have `snapshot` as a top-level tab.
+// Note: `rewards` is no longer a top-level tab — it lives inside the
+// notifications bell panel as a secondary tab alongside vendor notifications.
 export const rolePermissions = {
-  dsp_owner:    ['dvic', 'defects', 'vehicles', 'body', 'scorecard', 'rewards', 'admin'],
+  dsp_owner:    ['dvic', 'defects', 'vehicles', 'body', 'scorecard', 'admin'],
   vendor_admin: ['dvic', 'snapshot', 'work_orders', 'vehicles', 'body', 'scorecard', 'admin'],
   technician:   ['dvic', 'work_orders', 'vehicles', 'admin'],
-  site_admin:   ['dvic', 'defects', 'snapshot', 'vehicles', 'work_orders', 'body', 'scorecard', 'rewards', 'admin', 'ghost'],
+  site_admin:   ['dvic', 'defects', 'snapshot', 'vehicles', 'work_orders', 'body', 'scorecard', 'admin', 'ghost'],
 };
 
 // ============================================================
