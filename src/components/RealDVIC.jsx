@@ -2285,10 +2285,28 @@ export default function RealDVIC({ user }) {
 
   const canStartInspection = user?.role === 'vendor_admin' || user?.role === 'technician' || user?.role === 'site_admin';
 
+  // QC inspection banner: in production it appears automatically on
+  // inspection day. For the demo we expose a barely-visible toggle in the
+  // top-right corner of the Home view so we can show/hide it on demand.
+  const [showQcBanner, setShowQcBanner] = useState(false);
+
   return (
     <div>
-      {/* Daily QC Inspection Readiness banner — only for DSP users */}
+      {/* Subtle banner-visibility toggle — DSP users only */}
       {(user?.role === 'dsp_owner' || user?.role === 'site_admin') && (
+        <div className="flex justify-end -mt-2 mb-1">
+          <button
+            onClick={() => setShowQcBanner((s) => !s)}
+            title={showQcBanner ? 'Hide QC inspection banner' : 'Simulate inspection day (show banner)'}
+            className="text-[10px] text-navy-600 hover:text-navy-300 px-2 py-1 rounded transition-colors cursor-pointer"
+          >
+            {showQcBanner ? '· hide banner ·' : '· · ·'}
+          </button>
+        </div>
+      )}
+
+      {/* Daily QC Inspection Readiness banner — only when toggle is on (simulating inspection day) */}
+      {(user?.role === 'dsp_owner' || user?.role === 'site_admin') && showQcBanner && (
         <InspectionReadinessBanner onClick={() => setShowInspection(true)} />
       )}
 

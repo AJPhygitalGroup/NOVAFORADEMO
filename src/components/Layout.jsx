@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, Wrench, ChevronRight, Menu, X, Sun, Moon, Bell,
   LayoutGrid, Truck, ClipboardList, Settings, Eye, Star, Home as HomeIcon, Gift,
-  Droplets, Sparkles, AlertTriangle
+  AlertTriangle
 } from 'lucide-react';
 import VendorScorecard from './VendorScorecard';
 import RealDVIC from './RealDVIC';
@@ -63,30 +63,17 @@ export default function Layout({ user, onSwitchRole, onLogout, onImpersonate, im
     if (typeof window === 'undefined') return 'dark';
     return localStorage.getItem('nf-theme') || 'dark';
   });
-  // Calm mode defaults to ON so the first impression is soft/subtle; colors
-  // come alive on hover. Persisted in localStorage.
-  const [calm, setCalm] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const stored = localStorage.getItem('nf-calm');
-    return stored === null ? true : stored === '1';
-  });
 
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'light') root.classList.add('light');
     else root.classList.remove('light');
+    // Calm mode (grayscale palette) was removed — make sure the class is off
+    root.classList.remove('calm');
     localStorage.setItem('nf-theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (calm) root.classList.add('calm');
-    else root.classList.remove('calm');
-    localStorage.setItem('nf-calm', calm ? '1' : '0');
-  }, [calm]);
-
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
-  const toggleCalm = () => setCalm((c) => !c);
 
   const ActiveComponent = VIEW_CATALOG[activeTab]?.Component || RealDVIC;
 
@@ -181,25 +168,6 @@ export default function Layout({ user, onSwitchRole, onLogout, onImpersonate, im
                     {userNotifCount > 99 ? '99+' : userNotifCount}
                   </span>
                 )}
-              </button>
-
-              {/* Calm / Vivid palette toggle */}
-              <button
-                onClick={toggleCalm}
-                title={calm ? 'Colors are muted — click to go vivid' : 'Colors are vivid — click to go calm'}
-                className="hidden sm:flex relative w-9 h-9 rounded-lg border border-navy-700/60 bg-navy-800/60 text-navy-200 hover:text-white hover:bg-navy-700/60 items-center justify-center transition-all cursor-pointer"
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {calm ? (
-                    <motion.span key="droplets" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Droplets size={14} />
-                    </motion.span>
-                  ) : (
-                    <motion.span key="sparkles" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Sparkles size={14} className="text-accent-gold" />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
               </button>
 
               {/* Theme toggle */}

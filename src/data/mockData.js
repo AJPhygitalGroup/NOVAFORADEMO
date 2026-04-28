@@ -6,14 +6,14 @@
 export const demoAccounts = [
   {
     id: 'usr-001',
-    name: 'Tamika Gambrell',
-    email: 'tamika@ribrell21.com',
-    org: 'Ribrell 21',
+    name: 'Jon Doe',
+    email: 'jon@safetyfirst.com',
+    org: 'Safety First LLC',
     orgId: 'DSP-4201',
     orgType: 'dsp',
     role: 'dsp_owner',
     roleLabel: 'DSP Fleet Owner',
-    avatar: 'TG',
+    avatar: 'JD',
     station: 'DSE4',
     notifications: 3,
     language: 'en',
