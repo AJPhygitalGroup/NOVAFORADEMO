@@ -2253,6 +2253,10 @@ export default function RealDVIC({ user }) {
   const scheduledTonight = allDefects.filter((d) => d.status === 'Rush Order' || d.status === 'Scheduled').length;
   const notInspected = 7;
   const newToApprove = 2;
+  // Vans inspected vs scheduled — drives the 'N of M' card and the completion-rate chip
+  const vansInspectedCount = 23;
+  const vansScheduledCount = 30;
+  const vansInspectedRate = Math.round((vansInspectedCount / vansScheduledCount) * 100);
   // Defects awaiting DSP approval — drives the AlertTriangle visibility on that card
   const pendingApprovalCount = 10;
   // Repairs still waiting for DSP feedback (thumbs up/down) on the vendor's work
@@ -2343,16 +2347,16 @@ export default function RealDVIC({ user }) {
               </div>
             </motion.div>
 
-            {/* Vans Inspected — 23 of 30, next inspection date below */}
+            {/* Vans Inspected — N of M with completion rate */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.4 }}
               onClick={() => setOpenCard('inspected')}
               className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer h-full flex flex-col">
               <div className="flex items-start justify-end mb-3">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent-green/15 text-accent-green">+18%</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent-green/15 text-accent-green">{vansInspectedRate}%</span>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-1">23 <span className="text-navy-400 font-normal text-xl">of 30</span></div>
-                <div className="text-sm text-navy-400">Vans Inspected in Recent QC DVIC</div>
+                <div className="text-2xl font-bold text-white mb-1">{vansInspectedCount} <span className="text-navy-400 font-normal text-xl">of {vansScheduledCount}</span></div>
+                <div className="text-sm text-navy-400">Vans Inspected</div>
               </div>
               <div className="mt-auto pt-2 text-center text-[11px] text-navy-400">
                 Next inspection <span className="text-white font-medium">{nextInspectionDate}</span>
