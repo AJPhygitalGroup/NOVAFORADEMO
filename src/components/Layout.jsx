@@ -155,8 +155,9 @@ export default function Layout({ user, onSwitchRole, onLogout, onImpersonate, im
               )}
             </div>
 
-            {/* Desktop tabs (compact, scrolls if many) */}
-            <nav className="hidden lg:flex items-center gap-1 overflow-x-auto">
+            {/* Desktop tabs (compact). overflow-visible required so the
+                Dashboard dropdown isn't clipped by the nav. */}
+            <nav className="hidden lg:flex items-center gap-1 overflow-visible flex-wrap">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 if (tab.isGroup) {
