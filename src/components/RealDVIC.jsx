@@ -2412,7 +2412,7 @@ export default function RealDVIC({ user }) {
               <MetricCard
                 label="Defects Repaired"
                 value={repairedDefectsCount}
-                subtitle={repairedThisWeekCount > 0 ? `${repairedThisWeekCount} this week · tap for history` : 'Completed by vendors'}
+                subtitle="Current Week"
                 color="accent-green"
                 delay={0.2}
                 trend={repairedThisWeekCount > 0 ? Math.round((repairedThisWeekCount / Math.max(totalDefectsToday, 1)) * 100) : undefined}
