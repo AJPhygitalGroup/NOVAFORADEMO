@@ -2401,7 +2401,7 @@ export default function RealDVIC({ user }) {
             <div onClick={() => setOpenCard('scheduled')} className="cursor-pointer h-full">
               <MetricCard
                 icon={AlertTriangle}
-                label="Scheduled Vehicle"
+                label="Scheduled Repairs"
                 value={scheduledTonight}
                 color="accent-red"
                 delay={0.15}
