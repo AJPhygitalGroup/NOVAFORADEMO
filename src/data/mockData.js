@@ -620,10 +620,7 @@ export const weeklyInspections = [
 ];
 
 export const defectCategoryBreakdown = [
-  { name: 'Tires', value: 28, color: '#3b82f6' },
-  { name: 'Lights', value: 22, color: '#f59e0b' },
-  { name: 'Body', value: 18, color: '#8b5cf6' },
-  { name: 'Brakes', value: 14, color: '#ef4444' },
-  { name: 'Fluids', value: 10, color: '#22c55e' },
-  { name: 'Other', value: 8, color: '#627d98' },
+  { name: 'VSA',   value: 28, color: '#3b82f6' },
+  { name: 'RSI',   value: 24, color: '#f59e0b' },
+  { name: 'Other', value: 48, color: '#8b5cf6' },
 ];
