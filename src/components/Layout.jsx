@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, Wrench, ChevronRight, Menu, X, Sun, Moon, Bell,
   LayoutGrid, Truck, ClipboardList, Settings, Eye, Star, Home as HomeIcon, Gift,
-  AlertTriangle
+  AlertTriangle, ChevronDown, Check
 } from 'lucide-react';
 import VendorScorecard from './VendorScorecard';
 import RealDVIC from './RealDVIC';
@@ -33,13 +33,43 @@ const VIEW_CATALOG = {
   ghost:       { id: 'ghost',       label: 'Ghost Mode',       subtitle: 'Impersonate users',        icon: Eye,            color: 'text-accent-red',    Component: GhostMode },
 };
 
+// 'Dashboard' is a virtual group rendered as a dropdown that contains the
+// defects + body repairs views (so they share a single nav slot for DSP).
+const DASHBOARD_GROUP = {
+  id: 'dashboard',
+  label: 'Dashboard',
+  icon: AlertTriangle,
+  color: 'text-accent-orange',
+  children: ['defects', 'body'],
+};
+
 export default function Layout({ user, onSwitchRole, onLogout, onImpersonate, impersonating, onExitImpersonation }) {
   const [showNotifs, setShowNotifs] = useState(false);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
 
-  // Tabs are derived from the user's role — no hardcoding
+  // Tabs are derived from the user's role. Views that belong to the
+  // Dashboard dropdown collapse into a single virtual group entry placed
+  // where the first of its children appeared in the role's permission list.
   const tabs = useMemo(() => {
     const allowedIds = rolePermissions[user.role] || [];
-    return allowedIds.map((id) => VIEW_CATALOG[id]).filter(Boolean);
+    const groupChildren = DASHBOARD_GROUP.children
+      .filter((c) => allowedIds.includes(c))
+      .map((id) => VIEW_CATALOG[id])
+      .filter(Boolean);
+    const result = [];
+    let dashboardInserted = false;
+    for (const id of allowedIds) {
+      if (DASHBOARD_GROUP.children.includes(id)) {
+        if (!dashboardInserted && groupChildren.length > 0) {
+          result.push({ ...DASHBOARD_GROUP, isGroup: true, childrenViews: groupChildren });
+          dashboardInserted = true;
+        }
+        continue;
+      }
+      const view = VIEW_CATALOG[id];
+      if (view) result.push(view);
+    }
+    return result;
   }, [user.role]);
 
   // Live notification count per user (computed from seed)
@@ -129,6 +159,57 @@ export default function Layout({ user, onSwitchRole, onLogout, onImpersonate, im
             <nav className="hidden lg:flex items-center gap-1 overflow-x-auto">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
+                if (tab.isGroup) {
+                  // Group dropdown — active when any child view is the active tab
+                  const isActive = tab.childrenViews.some((c) => c.id === activeTab);
+                  return (
+                    <div key={tab.id} className="relative shrink-0">
+                      <button
+                        onClick={() => setDashboardOpen((o) => !o)}
+                        className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                          isActive
+                            ? 'bg-navy-800 text-white'
+                            : 'text-navy-300 hover:text-white hover:bg-navy-800/50'
+                        }`}>
+                        <Icon size={15} className={isActive ? tab.color : ''} />
+                        <span>{tab.label}</span>
+                        <ChevronDown size={12} className={`transition-transform ${dashboardOpen ? 'rotate-180' : ''}`} />
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeTabIndicator"
+                            className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-accent-blue to-accent-purple rounded-full"
+                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                          />
+                        )}
+                      </button>
+                      {dashboardOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setDashboardOpen(false)} />
+                          <div className="absolute top-full left-0 mt-1 w-56 bg-navy-900 border border-navy-700 rounded-lg shadow-2xl z-50 overflow-hidden">
+                            {tab.childrenViews.map((child) => {
+                              const ChildIcon = child.icon;
+                              const childActive = activeTab === child.id;
+                              return (
+                                <button key={child.id}
+                                  onClick={() => { setActiveTab(child.id); setDashboardOpen(false); }}
+                                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors border-b border-navy-800/60 last:border-b-0 ${
+                                    childActive ? 'bg-navy-800 text-white' : 'text-navy-200 hover:bg-navy-800/60 hover:text-white'
+                                  }`}>
+                                  <ChildIcon size={14} className={child.color} />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-medium">{child.label}</div>
+                                    <div className="text-[10px] text-navy-400">{child.subtitle}</div>
+                                  </div>
+                                  {childActive && <Check size={12} className="text-accent-green shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                }
                 const isActive = activeTab === tab.id;
                 return (
                   <button
@@ -215,6 +296,34 @@ export default function Layout({ user, onSwitchRole, onLogout, onImpersonate, im
               <div className="p-4 space-y-2">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
+                  if (tab.isGroup) {
+                    return (
+                      <div key={tab.id} className="space-y-1">
+                        <div className="flex items-center gap-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-navy-400">
+                          <Icon size={14} className={tab.color} />
+                          {tab.label}
+                        </div>
+                        {tab.childrenViews.map((child) => {
+                          const ChildIcon = child.icon;
+                          const childActive = activeTab === child.id;
+                          return (
+                            <button key={child.id}
+                              onClick={() => { setActiveTab(child.id); setMobileMenuOpen(false); }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 ml-2 rounded-lg text-left transition-all ${
+                                childActive ? 'bg-navy-800 text-white' : 'text-navy-300 hover:bg-navy-800/50'
+                              }`}>
+                              <ChildIcon size={18} className={childActive ? child.color : ''} />
+                              <div>
+                                <div className="font-medium text-sm">{child.label}</div>
+                                <div className="text-xs text-navy-400">{child.subtitle}</div>
+                              </div>
+                              <ChevronRight size={14} className="ml-auto" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
                   const isActive = activeTab === tab.id;
                   return (
                     <button
