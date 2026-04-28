@@ -83,7 +83,15 @@ export default function Layout({ user, onSwitchRole, onLogout, onImpersonate, im
 
   // Reset to first allowed tab when role changes
   useEffect(() => {
-    if (!tabs.find((t) => t.id === activeTab)) {
+    const allTabIds = new Set();
+    tabs.forEach((t) => {
+      if (t.isGroup && Array.isArray(t.childrenViews)) {
+        t.childrenViews.forEach((c) => allTabIds.add(c.id));
+      } else {
+        allTabIds.add(t.id);
+      }
+    });
+    if (!allTabIds.has(activeTab)) {
       setActiveTab(defaultTab);
     }
   }, [user.role, tabs, activeTab, defaultTab]);
