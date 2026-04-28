@@ -2366,7 +2366,6 @@ export default function RealDVIC({ user }) {
                 value={pendingApprovalCount}
                 color="accent-red"
                 delay={0.1}
-                labelClassName="text-sm font-semibold text-accent-red"
               />
             </div>
 
