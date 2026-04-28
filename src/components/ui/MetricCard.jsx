@@ -12,8 +12,12 @@ const colorMap = {
 
 export default function MetricCard({ icon: Icon, label, value, subtitle, trend, trendUp, color = 'accent-blue', delay = 0, valueBadge, valueBadgeColor = 'accent-red', labelClassName, warning }) {
   const c = colorMap[color] || colorMap['accent-blue'];
-  const hasTopRow = !!Icon || trend !== undefined;
 
+  // Layout uses a fixed 3-row grid so 5 sibling cards vertically align even
+  // when some have icons / trends / footer chips and others don't.
+  //   Top:     40px (icon box | trend chip | empty)
+  //   Middle:  flex-1, value + label vertically centered
+  //   Bottom:  min 28px reserved for subtitle / warning chip
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -21,27 +25,26 @@ export default function MetricCard({ icon: Icon, label, value, subtitle, trend, 
       transition={{ delay, duration: 0.4 }}
       className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all duration-300 group h-full flex flex-col"
     >
-      {hasTopRow ? (
-        <div className="flex items-start justify-between mb-3">
-          {Icon ? (
-            <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center`}>
-              <Icon size={20} className={c.text} />
-            </div>
-          ) : <div />}
-          {trend !== undefined && (
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-              trendUp ? 'bg-accent-green/15 text-accent-green' : 'bg-accent-red/15 text-accent-red'
-            }`}>
-              {trendUp ? '+' : ''}{trend}%
-            </span>
-          )}
-        </div>
-      ) : (
-        <div className="h-10 mb-3" />
-      )}
-      <div className="text-center">
+      {/* Top row — always 40px tall */}
+      <div className="h-10 mb-3 flex items-start justify-between">
+        {Icon ? (
+          <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center`}>
+            <Icon size={20} className={c.text} />
+          </div>
+        ) : <span className="w-10 h-10" />}
+        {trend !== undefined ? (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+            trendUp ? 'bg-accent-green/15 text-accent-green' : 'bg-accent-red/15 text-accent-red'
+          }`}>
+            {trendUp ? '+' : ''}{trend}%
+          </span>
+        ) : <span />}
+      </div>
+
+      {/* Middle — vertically centered value + label */}
+      <div className="flex-1 flex flex-col justify-center text-center">
         <div className="flex items-center justify-center gap-2 mb-1">
-          <div className="text-2xl font-bold text-white group-hover:text-navy-50 transition-colors">
+          <div className="text-2xl font-bold text-white group-hover:text-navy-50 transition-colors leading-none">
             {value}
           </div>
           {valueBadge && (
@@ -56,7 +59,9 @@ export default function MetricCard({ icon: Icon, label, value, subtitle, trend, 
         </div>
         <div className={labelClassName || 'text-sm text-navy-400'}>{label}</div>
       </div>
-      <div className="mt-auto pt-2 flex flex-col items-center gap-1.5">
+
+      {/* Bottom — reserved height even when empty, so heights line up */}
+      <div className="min-h-[28px] pt-2 flex flex-col items-center gap-1.5">
         {subtitle && <div className="text-xs text-navy-500 text-center">{subtitle}</div>}
         {warning && (
           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-gold/15 border border-accent-gold/40 text-accent-gold text-[10px] font-semibold">

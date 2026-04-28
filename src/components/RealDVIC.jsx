@@ -2325,7 +2325,9 @@ export default function RealDVIC({ user }) {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
               onClick={() => setOpenCard('reported')}
               className="relative bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer h-full flex flex-col">
-              <div className="flex items-start justify-end mb-3">
+              {/* Top row — fixed 40px height, matches MetricCard */}
+              <div className="h-10 mb-3 flex items-start justify-between">
+                <span className="w-10 h-10" />
                 <button
                   onClick={(e) => { e.stopPropagation(); setCreateWOContext({ van: null, defect: null }); }}
                   className="w-9 h-9 rounded-full bg-accent-blue/15 border border-accent-blue/40 text-accent-blue hover:bg-accent-blue/25 transition-colors cursor-pointer flex items-center justify-center"
@@ -2334,16 +2336,18 @@ export default function RealDVIC({ user }) {
                   <Plus size={18} />
                 </button>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-1">{totalDefectsToday}</div>
+              {/* Middle — value + label vertically centered */}
+              <div className="flex-1 flex flex-col justify-center text-center">
+                <div className="text-2xl font-bold text-white mb-1 leading-none">{totalDefectsToday}</div>
                 <div className="text-sm text-navy-400">DSP-reported defects today</div>
               </div>
-              <div className="mt-auto pt-2 flex justify-center">
-                {rushOrders > 0 ? (
+              {/* Bottom — reserved height for the Rush Order chip */}
+              <div className="min-h-[28px] pt-2 flex flex-col items-center gap-1.5">
+                {rushOrders > 0 && (
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-red/15 border border-accent-red/30">
                     <span className="text-[10px] font-semibold text-accent-red">{rushOrders} Rush Order</span>
                   </div>
-                ) : <div className="h-[22px]" />}
+                )}
               </div>
             </motion.div>
 
@@ -2351,15 +2355,18 @@ export default function RealDVIC({ user }) {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.4 }}
               onClick={() => setOpenCard('inspected')}
               className="bg-navy-900/60 backdrop-blur border border-navy-700/40 rounded-xl p-5 hover:border-navy-600/60 transition-all cursor-pointer h-full flex flex-col">
-              <div className="flex items-start justify-end mb-3">
+              <div className="h-10 mb-3 flex items-start justify-between">
+                <span className="w-10 h-10" />
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent-green/15 text-accent-green">{vansInspectedRate}%</span>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-1">{vansInspectedCount} <span className="text-navy-400 font-normal text-xl">of {vansScheduledCount}</span></div>
+              <div className="flex-1 flex flex-col justify-center text-center">
+                <div className="text-2xl font-bold text-white mb-1 leading-none">{vansInspectedCount} <span className="text-navy-400 font-normal text-xl">of {vansScheduledCount}</span></div>
                 <div className="text-sm text-navy-400">Vans Inspected</div>
               </div>
-              <div className="mt-auto pt-2 text-center text-[11px] text-navy-400">
-                Next inspection <span className="text-white font-medium">{nextInspectionDate}</span>
+              <div className="min-h-[28px] pt-2 flex flex-col items-center gap-1.5">
+                <div className="text-[11px] text-navy-400 text-center">
+                  Next inspection <span className="text-white font-medium">{nextInspectionDate}</span>
+                </div>
               </div>
             </motion.div>
 
