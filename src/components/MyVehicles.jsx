@@ -8,6 +8,7 @@ import {
 import { fleetSnapshotVans } from '../data/mockData';
 import Badge from './ui/Badge';
 import VehicleDetailPage from './VehicleDetailPage';
+import { FlexFleetModal } from './FleetSnapshot';
 
 // ============================================================
 // Helpers
@@ -782,6 +783,7 @@ export default function MyVehicles({ user }) {
   const [showAdd, setShowAdd] = useState(false);
   const [detailVehicle, setDetailVehicle] = useState(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showFlexFleet, setShowFlexFleet] = useState(false);
   const [classFilter, setClassFilter] = useState('all');
   const [dspFilter, setDspFilter] = useState('all');
   const [dspFilterOpen, setDspFilterOpen] = useState(false);
@@ -936,7 +938,7 @@ export default function MyVehicles({ user }) {
     );
   }
 
-  const title = isVendor ? 'DSP Vehicles' : 'My Vehicles';
+  const title = isVendor ? 'DSP Vehicles' : 'My Fleet';
   const subtitle = isVendor
     ? 'Fleet directory across your assigned DSPs — copy any vehicle\'s details to your billing system'
     : 'Fleet management';
@@ -976,6 +978,10 @@ export default function MyVehicles({ user }) {
           {/* Owner / admin actions — write access */}
           {canEdit && (
             <>
+              <button onClick={() => setShowFlexFleet(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent-purple/15 border border-accent-purple/40 text-accent-purple text-sm font-semibold hover:bg-accent-purple/25 cursor-pointer">
+                <Truck size={14} /> Order Flex Fleet
+              </button>
               <button onClick={() => setShowBulkUpload(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent-blue/15 border border-accent-blue/40 text-accent-blue text-sm font-semibold hover:bg-accent-blue/25 cursor-pointer">
                 <Upload size={14} /> Bulk Upload
@@ -1144,6 +1150,9 @@ export default function MyVehicles({ user }) {
             onApply={handleApplyBulk}
             onClose={() => setShowBulkUpload(false)}
           />
+        )}
+        {showFlexFleet && (
+          <FlexFleetModal onClose={() => setShowFlexFleet(false)} />
         )}
       </AnimatePresence>
     </div>

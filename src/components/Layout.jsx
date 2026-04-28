@@ -24,7 +24,7 @@ const VIEW_CATALOG = {
   dvic:        { id: 'dvic',        label: 'Home',             subtitle: 'Command center',           icon: HomeIcon,       color: 'text-accent-green',  Component: RealDVIC },
   defects:     { id: 'defects',     label: 'Defects',          subtitle: 'All reported defects',     icon: AlertTriangle,  color: 'text-accent-orange', Component: Defects },
   snapshot:    { id: 'snapshot',    label: 'QC DVIC',          subtitle: 'Heatmap view',             icon: LayoutGrid,     color: 'text-accent-blue',   Component: FleetSnapshot },
-  vehicles:    { id: 'vehicles',    label: 'Vehicles',         subtitle: 'Fleet directory',          icon: Truck,          color: 'text-accent-green',  Component: MyVehicles },
+  vehicles:    { id: 'vehicles',    label: 'My Fleet',         subtitle: 'Fleet directory',          icon: Truck,          color: 'text-accent-green',  Component: MyVehicles },
   work_orders: { id: 'work_orders', label: 'Work Orders',      subtitle: 'Vendor hub',               icon: ClipboardList,  color: 'text-accent-purple', Component: WorkOrders },
   body:        { id: 'body',        label: 'Body Repairs',     subtitle: 'Enhanced Portal',          icon: Wrench,         color: 'text-accent-purple', Component: BodyRepairs },
   scorecard:   { id: 'scorecard',   label: 'Vendor Scorecard', subtitle: 'DFS Value Proposition',    icon: BarChart3,      color: 'text-accent-blue',   Component: VendorScorecard },
